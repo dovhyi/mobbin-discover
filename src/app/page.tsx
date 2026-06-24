@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
-import CategoriesGrid from "@/components/CategoriesGrid";
 import TabsBar from "@/components/TabsBar";
 import AppCardsGrid from "@/components/AppCardsGrid";
 import SearchOverlay from "@/components/SearchOverlay";
@@ -36,22 +35,16 @@ export default function Home() {
             "calc(var(--max-content-width) + var(--container-x-padding) * 2)",
         }}
       >
-        {/* Categories + Cards section */}
+        {/* Cards section */}
         <div
-          className="flex flex-col gap-y-[80px] py-[32px]"
+          className="flex flex-col gap-y-[24px] py-[32px]"
           style={{
             paddingLeft: "var(--container-x-padding)",
             paddingRight: "var(--container-x-padding)",
           }}
         >
-          {/* Categories */}
-          <CategoriesGrid />
-
-          {/* Cards section */}
-          <div className="flex flex-col gap-y-[24px]">
-            <TabsBar />
-            <AppCardsGrid />
-          </div>
+          <TabsBar />
+          <AppCardsGrid />
         </div>
       </main>
     </div>
