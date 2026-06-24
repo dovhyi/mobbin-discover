@@ -148,6 +148,7 @@ function SearchPageInner() {
             platform={platform}
             type={type}
             filters={filters}
+            query={query}
           />
         </div>
       </main>
