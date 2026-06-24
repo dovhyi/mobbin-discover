@@ -1,0 +1,58 @@
+{
+  "dropdown": {
+    "topResults": [
+      { "type": "uiElement", "name": "Dropdown Menu", "description": "UI Element" },
+      { "type": "uiElement", "name": "Dropdown Button", "description": "UI Element" }
+    ],
+    "other": [
+      { "type": "app", "name": "Dropbox", "description": "Cloud backup & photos manager", "color": "#0061FF" },
+      { "type": "app", "name": "Dropbox Paper", "description": "Create & share ideas in paper", "color": "#0061FF" },
+      { "type": "app", "name": "Wix", "description": "Your website, your business, your future", "color": "#0C6EFC" },
+      { "type": "app", "name": "Webflow", "description": "Create a custom website", "color": "#4353FF" },
+      { "type": "app", "name": "v0", "description": "AI powered web development", "color": "#000000" },
+      { "type": "app", "name": "Lovable", "description": "Build apps & websites with AI", "color": "#FF6B6B" }
+    ],
+    "ios": [
+      { "type": "app", "name": "Drop", "description": "Shop, save & earn rewards", "color": "#5B3DC4" },
+      { "type": "app", "name": "Drops", "description": "Learn Spanish, English, Arabic", "color": "#36C5F0" }
+    ],
+    "sites": [
+      { "type": "app", "name": "Dropbox Brand Guidelines", "description": "Infuse everything with identity", "color": "#0061FF" }
+    ]
+  },
+  "pricing page": {
+    "topResults": [
+      { "type": "screen", "name": "Pricing", "description": "Screen" },
+      { "type": "flow", "name": "Upgrading Plan", "description": "Flow" }
+    ],
+    "other": [
+      { "type": "app", "name": "Stripe", "description": "Financial infrastructure for the internet", "color": "#635BFF" },
+      { "type": "app", "name": "Paddle", "description": "Payment infrastructure for software", "color": "#4B5563" },
+      { "type": "app", "name": "Lemon Squeezy", "description": "Payments, tax & subscriptions", "color": "#FCC419" },
+      { "type": "app", "name": "Cal.com", "description": "Scheduling infrastructure", "color": "#292929" },
+      { "type": "app", "name": "Vercel", "description": "Develop, preview, ship", "color": "#000000" }
+    ],
+    "ios": [],
+    "sites": [
+      { "type": "app", "name": "Linear Pricing", "description": "Modern project management", "color": "#5E6AD2" },
+      { "type": "app", "name": "Notion Pricing", "description": "Your wiki, docs & projects", "color": "#000000" }
+    ]
+  },
+  "empty state": {
+    "topResults": [
+      { "type": "screen", "name": "Empty State", "description": "Screen" },
+      { "type": "uiElement", "name": "Empty State Illustration", "description": "UI Element" }
+    ],
+    "other": [
+      { "type": "app", "name": "Linear", "description": "Modern project management", "color": "#5E6AD2" },
+      { "type": "app", "name": "Notion", "description": "Your wiki, docs & projects", "color": "#000000" },
+      { "type": "app", "name": "Figma", "description": "Collaborative design tool", "color": "#A259FF" },
+      { "type": "app", "name": "Slack", "description": "Business communication platform", "color": "#611F69" },
+      { "type": "app", "name": "Asana", "description": "Manage your team's work", "color": "#F06A6A" }
+    ],
+    "ios": [
+      { "type": "app", "name": "Things 3", "description": "Personal task manager", "color": "#4A90D9" }
+    ],
+    "sites": []
+  }
+}

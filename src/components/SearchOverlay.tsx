@@ -1,0 +1,690 @@
+"use client";
+
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import searchData from "@/data/searchResults.json";
+
+/* ── Icon helpers (inline SVGs from mobbin.com) ── */
+
+function SearchIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className={className}>
+      <path d="M16.59 16.59L13.2429 13.2424M15 9C15 12.3137 12.3137 15 9 15C5.68629 15 3 12.3137 3 9C3 5.68629 5.68629 3 9 3C12.3137 3 15 5.68629 15 9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function MobileIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="5" y="2" width="10" height="16" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+      <path d="M8 3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3C12 3.55228 11.5523 4 11 4H9C8.44772 4 8 3.55228 8 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function DesktopIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
+      <path d="M19 15H10.9893C10.9451 15.7154 10.7494 16.4027 10.417 17H14V19H7V17C8.06342 17 8.86869 16.2309 8.98438 15H1V2H19V15ZM3 11H17V4H3V11Z" fill="currentColor" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function TrendingIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+      <path d="M18.001 5L10.4852 12.7259L7.35364 9.50677L1.7168 15.3012" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M18.0008 12V5L11 5" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function CategoriesIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+      <rect x="3" y="10" width="14" height="8" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+      <path d="M5 6H15" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M7 2H13" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function ScreensIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+      <rect x="8" y="6" width="8" height="12" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+      <path d="M12 2H4V14" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function UIElementIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+      <path d="M2 10C2 6.68629 4.68629 4 8 4H12C15.3137 4 18 6.68629 18 10C18 13.3137 15.3137 16 12 16H8C4.68629 16 2 13.3137 2 10Z" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <circle cx="12" cy="10" r="3" fill="currentColor" />
+    </svg>
+  );
+}
+
+function FlowIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+      <path d="M4 17C5.65685 17 7 15.6569 7 14C7 12.3431 5.65685 11 4 11C2.34315 11 1 12.3431 1 14C1 15.6569 2.34315 17 4 17Z" fill="currentColor" />
+      <path d="M13 3H16H19V6V9H16H13V6V3Z" fill="currentColor" />
+      <path d="M4 9V7C4 5.34315 5.34315 4 7 4C8.65685 4 10 5.34315 10 7V13C10 14.6569 11.3431 16 13 16C14.6569 16 16 14.6569 16 13V11" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function TextInScreenshotIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M7 9H2" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M7 14H2" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M17 4H2" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M15 13L18.29 16.29" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M13 14C14.6569 14 16 12.6569 16 11C16 9.34315 14.6569 8 13 8C11.3431 8 10 9.34315 10 11C10 12.6569 11.3431 14 13 14Z" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function AddCircleIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path d="M10 6V10M10 10V14M10 10H6M10 10H14" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+/* ── Data ── */
+
+const recentSearches = [
+  { label: "Error", icon: "screens" },
+  { label: "Smart defaults", icon: "search" },
+  { label: "two step select", icon: "search" },
+  { label: "Select", icon: "ui" },
+  { label: "Dropdown Menu", icon: "ui" },
+  { label: "dropdown group", icon: "search" },
+];
+
+const sidebarTabs = [
+  { label: "Trending", icon: TrendingIcon },
+  { label: "Categories", icon: CategoriesIcon },
+  { label: "Screens", icon: ScreensIcon },
+  { label: "UI Elements", icon: UIElementIcon },
+  { label: "Flows", icon: FlowIcon },
+];
+
+const trendingApps = [
+  { name: "Claude", color: "#5A47A8" },
+  { name: "Stripe", color: "#635BFF" },
+  { name: "Attio", color: "#1A1A1A" },
+  { name: "Notion", color: "#FFFFFF" },
+  { name: "Airbnb", color: "#FF5A5F" },
+  { name: "Revolut", color: "#0D0D0D" },
+  { name: "Intercom", color: "#1F8DED" },
+];
+
+const trendingScreens = [
+  "Signup", "Login", "Home", "Dashboard",
+  "Checkout", "Error", "Search", "Filter & Sort",
+];
+
+const uiElements = [
+  "Table", "Card", "Dialog", "Stepper", "Button",
+  "Side Navigation", "Banner", "Progress Indicator",
+];
+
+const flows = ["Onboarding", "Editing Profile", "Filtering & Sorting", "Browsing Tutorial"];
+
+const textInScreenshot = ['"Forgot Password"', '"Contact Sales"', '"Bluetooth"'];
+
+/* ── Small icon for recent pills ── */
+function RecentIcon({ type }: { type: string }) {
+  if (type === "screens") return <ScreensIcon />;
+  if (type === "ui") return <UIElementIcon />;
+  return <SearchIcon className="text-white" />;
+}
+
+/* ── Flow icons (simplified) ── */
+function FlowCardIcon({ name }: { name: string }) {
+  const iconMap: Record<string, string> = {
+    Onboarding: "\u{1F441}",
+    "Editing Profile": "✏",
+    "Filtering & Sorting": "⇅",
+    "Browsing Tutorial": "\u{1F4AC}",
+  };
+  return <span className="text-[20px] opacity-40">{iconMap[name] || "•"}</span>;
+}
+
+/* ── Result row icon based on type ── */
+function ResultIcon({ type }: { type: string }) {
+  if (type === "screen") return <ScreensIcon />;
+  if (type === "uiElement") return <UIElementIcon />;
+  if (type === "flow") return <FlowIcon />;
+  if (type === "textInScreenshot") return <TextInScreenshotIcon />;
+  if (type === "addCircle") return <AddCircleIcon />;
+  return <SearchIcon />;
+}
+
+/* ── Search result row ── */
+interface SearchResultItem {
+  type: string;
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+function ResultRow({ item, selected, rowRef }: { item: SearchResultItem; selected?: boolean; rowRef?: React.Ref<HTMLDivElement> }) {
+  const isApp = item.type === "app";
+  return (
+    <div
+      ref={rowRef}
+      className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-white transition-colors ${
+        selected ? "bg-[rgba(237,237,237,0.08)]" : "hover:bg-[rgba(237,237,237,0.08)]"
+      }`}
+    >
+      <div className="shrink-0">
+        {isApp ? (
+          <div
+            className="size-[40px] shrink-0 rounded-[30%]"
+            style={{ backgroundColor: item.color || "#333" }}
+          />
+        ) : (
+          <div className="flex size-[40px] items-center justify-center rounded-[12px] bg-[rgba(237,237,237,0.08)]">
+            <ResultIcon type={item.type} />
+          </div>
+        )}
+      </div>
+      <div className="flex grow flex-col overflow-hidden">
+        <span className="truncate text-[16px] font-semibold leading-[24px]">{item.name}</span>
+        {item.description && (
+          <span className="truncate text-[14px] leading-[20px] text-[#adadad]">{item.description}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Search results group with heading ── */
+function ResultGroup({
+  heading,
+  items,
+  selectedIndex,
+  startIndex,
+  rowRefs,
+}: {
+  heading: string;
+  items: SearchResultItem[];
+  selectedIndex: number;
+  startIndex: number;
+  rowRefs: React.MutableRefObject<Map<number, HTMLDivElement>>;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[#adadad]">
+        {heading}
+      </div>
+      <div>
+        {items.map((item, i) => (
+          <ResultRow
+            key={item.name}
+            item={item}
+            selected={selectedIndex === startIndex + i}
+            rowRef={(el: HTMLDivElement | null) => {
+              if (el) rowRefs.current.set(startIndex + i, el);
+              else rowRefs.current.delete(startIndex + i);
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Component ── */
+
+interface SearchOverlayProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Animation: mount/unmount with transition
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setMounted(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  const hasQuery = query.trim().length > 0;
+
+  // Find matching search results from our dataset
+  const results = useMemo(() => {
+    if (!hasQuery) return null;
+    const q = query.trim().toLowerCase();
+    const data = searchData as Record<string, {
+      topResults: SearchResultItem[];
+      other: SearchResultItem[];
+      ios: SearchResultItem[];
+      sites: SearchResultItem[];
+    }>;
+    const exactMatch = data[q];
+    if (exactMatch) return exactMatch;
+    const keys = Object.keys(data);
+    const partialKey = keys.find((k) => k.startsWith(q) || q.startsWith(k));
+    if (partialKey) return data[partialKey];
+    return null;
+  }, [query, hasQuery]);
+
+  // Build flat list of total navigable items for arrow key navigation
+  const totalItems = useMemo(() => {
+    if (!hasQuery) return 0;
+    // Index 0: Free text search
+    let count = 1;
+    if (results) {
+      count += results.topResults.length;
+      count += results.other.length;
+      count += results.ios.length;
+      count += results.sites.length;
+    } else {
+      // Text in Screenshot fallback
+      count += 1;
+    }
+    // Request app row
+    count += 1;
+    return count;
+  }, [hasQuery, results]);
+
+  // Compute start indices for each group to map selectedIndex to rows
+  const groupStartIndices = useMemo(() => {
+    if (!results) return { topResults: 1, other: 2, ios: 2, sites: 2, requestApp: 2 };
+    let idx = 1; // after free text search (0)
+    const topResults = idx;
+    idx += results.topResults.length;
+    const other = idx;
+    idx += results.other.length;
+    const ios = idx;
+    idx += results.ios.length;
+    const sites = idx;
+    idx += results.sites.length;
+    const requestApp = idx;
+    return { topResults, other, ios, sites, requestApp };
+  }, [results]);
+
+  // Reset selection when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    const el = rowRefs.current.get(selectedIndex);
+    if (el) {
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    if (open) {
+      // Focus immediately (helps mobile keep user-gesture context)
+      inputRef.current?.focus();
+      // Fallback with rAF for cases where DOM isn't ready yet
+      requestAnimationFrame(() => inputRef.current?.focus());
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      // Delay body scroll restoration until exit animation finishes (200ms)
+      const timer = setTimeout(() => {
+        document.body.style.overflow = "";
+        document.body.style.paddingRight = "";
+      }, 200);
+      setQuery("");
+      setSelectedIndex(0);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    };
+  }, [open]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!open) return;
+
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (!hasQuery) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % totalItems);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
+      }
+    },
+    [open, onClose, hasQuery, totalItems],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  if (!mounted) return null;
+
+  return (
+    <>
+      {/* Backdrop overlay — hidden on mobile (full-screen modal covers everything) */}
+      <div
+        className={`fixed inset-0 z-50 bg-neutral-900/80 backdrop-blur-[4px] transition-opacity duration-200 ease-out max-[719px]:hidden ${visible ? "opacity-100" : "opacity-0"}`}
+        onClick={onClose}
+      />
+
+      {/* Dialog — full-screen on mobile, centered modal on desktop */}
+      <div
+        ref={dialogRef}
+        role="dialog"
+        className={`fixed inset-0 z-50 flex flex-col items-stretch transition-all duration-200 ease-out min-[720px]:inset-auto min-[720px]:top-[120px] min-[720px]:left-1/2 min-[720px]:w-[816px] min-[720px]:max-w-full min-[720px]:-translate-x-1/2 ${visible ? "opacity-100 min-[720px]:translate-y-0 min-[720px]:scale-100" : "opacity-0 min-[720px]:-translate-y-[16px] min-[720px]:scale-[0.98]"}`}
+      >
+        <div
+          className={`flex-1 overflow-hidden bg-[#1a1a1a] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[rgba(38,38,38,0.88)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
+            hasQuery
+              ? "grid grid-rows-[auto_1fr]"
+              : "grid grid-rows-[auto_auto_1fr]"
+          }`}
+        >
+          {/* ── Search input section ── */}
+          <section className="flex gap-x-[12px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
+            <div className="flex grow items-center gap-x-[8px]">
+              <input
+                ref={inputRef}
+                className="grow bg-transparent text-[16px] font-[456] leading-[24px] text-white placeholder:text-[#707070] outline-none"
+                placeholder="Web Apps, Screens, UI Elements, Flows or Keywords..."
+                type="text"
+                autoFocus
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {hasQuery && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="shrink-0 text-[#707070] transition-colors hover:text-white"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M10 19C14.9706 19 19 14.9706 19 10C19 5.02944 14.9706 1 10 1C5.02944 1 1 5.02944 1 10C1 14.9706 5.02944 19 10 19ZM6.0009 7.41414L8.58379 9.99703L6.0009 12.5799L7.41511 13.9941L9.99801 11.4112L12.5809 13.9941L13.9951 12.5799L11.4122 9.99703L13.9951 7.41414L12.5809 5.99992L9.99801 8.58282L7.41511 5.99992L6.0009 7.41414Z" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-x-[16px] text-[#707070]">
+              <button className="hidden transition-colors hover:text-white min-[720px]:block">
+                <MobileIcon />
+              </button>
+              <button className="hidden text-white min-[720px]:block">
+                <DesktopIcon />
+              </button>
+              {/* Mobile cancel button */}
+              <button
+                onClick={onClose}
+                className="shrink-0 text-[14px] font-medium text-[#adadad] transition-colors hover:text-white min-[720px]:hidden"
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+
+          {/* ── When no query: Recent searches + Trending content ── */}
+          {!hasQuery && (
+            <>
+              {/* Recent searches row */}
+              <section className="scrollbar-none flex w-full flex-nowrap gap-x-[8px] overflow-x-auto px-[20px] pb-[16px] pt-[8px]">
+                {recentSearches.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => setQuery(item.label)}
+                    className="group flex shrink-0 items-center gap-x-[8px] rounded-full bg-[rgba(237,237,237,0.08)] px-[12px] py-[8px] transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                  >
+                    <div className="size-[20px] shrink-0 text-white">
+                      <RecentIcon type={item.icon} />
+                    </div>
+                    <span className="whitespace-nowrap text-[14px] font-semibold leading-[20px] text-white">
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </section>
+
+              {/* Sidebar + Trending content */}
+              <section className="row-start-3 flex overflow-hidden pl-[20px]">
+                <aside className="hidden w-[240px] shrink-0 flex-col justify-between pb-[20px] pt-[8px] min-[720px]:flex">
+                  <div className="flex flex-col gap-y-[1px]">
+                    {sidebarTabs.map((tab, i) => (
+                      <button
+                        key={tab.label}
+                        className={`flex items-center gap-x-[8px] rounded-[12px] px-[12px] py-[8px] text-white transition-colors ${
+                          i === 0
+                            ? "bg-[rgba(237,237,237,0.08)]"
+                            : "hover:bg-[rgba(237,237,237,0.08)]"
+                        }`}
+                      >
+                        <tab.icon />
+                        <span className="text-[16px] font-semibold leading-[24px]">
+                          {tab.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </aside>
+
+                <div className="h-full grow overflow-y-auto pb-[40px] pl-[0px] pr-[0px] pt-[8px] min-[720px]:pl-[16px] min-[720px]:pr-[20px]">
+                  <div className="flex flex-col gap-y-[24px] overflow-hidden">
+                    <div className="flex gap-x-[8px] pr-[16px] min-[720px]:pr-[0px] overflow-x-auto scrollbar-none">
+                      {trendingApps.map((app) => (
+                        <button
+                          key={app.name}
+                          className="group flex w-[64px] shrink-0 cursor-pointer flex-col items-center gap-y-[4px]"
+                        >
+                          <div
+                            className="size-[64px] shrink-0 rounded-[30%]"
+                            style={{ backgroundColor: app.color }}
+                          />
+                          <span className="w-full truncate text-center text-[12px] font-semibold leading-[16px] text-white">
+                            {app.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-y-[12px]">
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Screens</h4>
+                      <div className="grid grid-cols-4 gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                        {trendingScreens.map((screen) => (
+                          <button
+                            key={screen}
+                            className="relative flex aspect-square cursor-pointer items-start overflow-hidden rounded-[16px] bg-[rgba(237,237,237,0.08)] p-[12px] text-left text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                          >
+                            {screen}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-y-[12px]">
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">UI Elements</h4>
+                      <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                        {uiElements.map((el) => (
+                          <button
+                            key={el}
+                            className="cursor-pointer rounded-full bg-[rgba(237,237,237,0.08)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                          >
+                            {el}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-y-[12px]">
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Flows</h4>
+                      <div className="grid grid-cols-4 gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                        {flows.map((flow) => (
+                          <button
+                            key={flow}
+                            className="flex aspect-square cursor-pointer flex-col justify-between overflow-hidden rounded-[16px] bg-[rgba(237,237,237,0.08)] p-[12px] text-left transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                          >
+                            <span className="text-[16px] font-semibold leading-[24px] text-white">{flow}</span>
+                            <FlowCardIcon name={flow} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-y-[12px]">
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Text in Screenshot</h4>
+                      <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                        {textInScreenshot.map((text) => (
+                          <button
+                            key={text}
+                            className="cursor-pointer rounded-full bg-[rgba(237,237,237,0.08)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                          >
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* ── When query exists: Search results ── */}
+          {hasQuery && (
+            <section className="overflow-hidden">
+              <div className="h-full overflow-y-auto px-[20px] pb-[20px] pt-[8px]">
+                <div className="flex flex-col gap-y-[12px]">
+                  {/* Free text search row (index 0) */}
+                  <div>
+                    <ResultRow
+                      item={{ type: "search", name: query }}
+                      selected={selectedIndex === 0}
+                      rowRef={(el: HTMLDivElement | null) => {
+                        if (el) rowRefs.current.set(0, el);
+                        else rowRefs.current.delete(0);
+                      }}
+                    />
+                  </div>
+
+                  {results ? (
+                    <>
+                      {/* Top results (no heading) */}
+                      {results.topResults.length > 0 && (
+                        <div>
+                          {results.topResults.map((item, i) => (
+                            <ResultRow
+                              key={item.name}
+                              item={item}
+                              selected={selectedIndex === groupStartIndices.topResults + i}
+                              rowRef={(el: HTMLDivElement | null) => {
+                                const idx = groupStartIndices.topResults + i;
+                                if (el) rowRefs.current.set(idx, el);
+                                else rowRefs.current.delete(idx);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Other group */}
+                      <ResultGroup
+                        heading="Other"
+                        items={results.other}
+                        selectedIndex={selectedIndex}
+                        startIndex={groupStartIndices.other}
+                        rowRefs={rowRefs}
+                      />
+
+                      {/* iOS group */}
+                      <ResultGroup
+                        heading="iOS"
+                        items={results.ios}
+                        selectedIndex={selectedIndex}
+                        startIndex={groupStartIndices.ios}
+                        rowRefs={rowRefs}
+                      />
+
+                      {/* Sites group */}
+                      <ResultGroup
+                        heading="Sites"
+                        items={results.sites}
+                        selectedIndex={selectedIndex}
+                        startIndex={groupStartIndices.sites}
+                        rowRefs={rowRefs}
+                      />
+                    </>
+                  ) : (
+                    /* No matching dataset — show "Text in Screenshot" fallback */
+                    <div>
+                      <ResultRow
+                        item={{
+                          type: "textInScreenshot",
+                          name: `"${query}"`,
+                          description: "Text in Screenshot",
+                        }}
+                        selected={selectedIndex === 1}
+                        rowRef={(el: HTMLDivElement | null) => {
+                          if (el) rowRefs.current.set(1, el);
+                          else rowRefs.current.delete(1);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Looking for something else? */}
+                  <div>
+                    <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[#adadad]">
+                      Looking for something else?
+                    </div>
+                    <ResultRow
+                      item={{ type: "addCircle", name: "Request app" }}
+                      selected={selectedIndex === groupStartIndices.requestApp}
+                      rowRef={(el: HTMLDivElement | null) => {
+                        if (el) rowRefs.current.set(groupStartIndices.requestApp, el);
+                        else rowRefs.current.delete(groupStartIndices.requestApp);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
