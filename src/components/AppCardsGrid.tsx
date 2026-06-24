@@ -72,6 +72,11 @@ const UI_ELEMENT_SECTIONS = [
   "Buttons", "Inputs", "Cards", "Navigation", "Modals", "Tables",
 ];
 
+const FLOW_TYPES = [
+  "Browsing Tutorial", "Creating Account", "Onboarding",
+  "Editing Profile", "Logging In", "Adding to Cart & Bag",
+];
+
 // Same content for iOS and Web, rearranged so the two don't look identical.
 const reorderForWeb = (items: string[]) => [...items].reverse();
 
@@ -114,11 +119,23 @@ function AppInfo({
   );
 }
 
-function SpinnerIcon({ size = 18 }: { size?: number }) {
+function LoaderDots({ size = 18 }: { size?: number }) {
+  const dots: [number, number][] = [
+    [19, 12], [16.95, 16.95], [12, 19], [7.05, 16.95],
+    [5, 12], [7.05, 7.05], [12, 5], [16.95, 7.05],
+  ];
   return (
-    <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="var(--muted)" strokeWidth="3" strokeOpacity="0.25" />
-      <path d="M12 3a9 9 0 0 1 9 9" stroke="var(--muted)" strokeWidth="3" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {dots.map(([cx, cy], i) => (
+        <circle
+          key={i}
+          cx={cx}
+          cy={cy}
+          r={1.7}
+          fill="var(--muted)"
+          opacity={0.35 + (i / dots.length) * 0.45}
+        />
+      ))}
     </svg>
   );
 }
@@ -127,7 +144,7 @@ function PlaceholderInfo() {
   return (
     <section className="pointer-events-none flex w-full items-center gap-x-[8px]">
       <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[30%] bg-[var(--surface)]">
-        <SpinnerIcon />
+        <LoaderDots />
       </div>
       <div className="flex min-w-0 grow flex-col">
         <h3 className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
@@ -145,7 +162,7 @@ function CompactLabel() {
   return (
     <div className="pointer-events-none flex items-center gap-x-[8px]">
       <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-[28%] bg-[var(--surface)]">
-        <SpinnerIcon size={13} />
+        <LoaderDots size={13} />
       </div>
       <span className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
         App
@@ -182,14 +199,7 @@ function PhoneFrame() {
 
 function BrowserFrame() {
   return (
-    <div className="relative w-[84%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
-      <div className="flex h-[20px] items-center gap-[4px] border-b border-[var(--border)] px-[10px]">
-        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-      </div>
-      <div className="aspect-[16/10] w-full" />
-    </div>
+    <div className="relative aspect-[16/10] w-[84%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
   );
 }
 
@@ -317,10 +327,8 @@ function BareSkeletonCard({ variant }: { variant: "ios" | "web" }) {
 
 function CategorySection({ name, variant }: { name: string; variant: "ios" | "web" }) {
   return (
-    <div className="flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
-      <h2 className="text-[20px] font-[652] leading-[28px] text-[var(--foreground)]">
-        {name}
-      </h2>
+    <div className="group/section flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
+      <SectionHeader name={name} />
       <div className="grid grid-cols-2 gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px]">
         {Array.from({ length: 4 }).map((_, i) => (
           <PlaceholderCard key={i} variant={variant} />
@@ -344,13 +352,16 @@ function CategorySectionSkeleton({ aspect }: { aspect: string }) {
 }
 
 function ScreenSection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+  const count = variant === "ios" ? 5 : 3;
+  const cols =
+    variant === "ios"
+      ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+      : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
-    <div className="flex flex-col gap-y-[20px]">
-      <h2 className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
-        {name}
-      </h2>
-      <div className="grid grid-cols-2 gap-x-[16px] gap-y-[28px] min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+    <div className="group/section flex flex-col gap-y-[20px]">
+      <SectionHeader name={name} small />
+      <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
+        {Array.from({ length: count }).map((_, i) => (
           <BareScreenCard key={i} variant={variant} />
         ))}
       </div>
@@ -359,12 +370,155 @@ function ScreenSection({ name, variant }: { name: string; variant: "ios" | "web"
 }
 
 function ScreenSectionSkeleton({ variant }: { variant: "ios" | "web" }) {
+  const count = variant === "ios" ? 5 : 3;
+  const cols =
+    variant === "ios"
+      ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+      : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className="flex flex-col gap-y-[20px]">
       <div className="h-[24px] w-[140px] animate-pulse rounded-[6px] bg-[var(--card)]" />
-      <div className="grid grid-cols-2 gap-x-[16px] gap-y-[28px] min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
+        {Array.from({ length: count }).map((_, i) => (
           <BareSkeletonCard key={i} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Section header (with hover arrow) ── */
+
+function SectionArrow() {
+  return (
+    <svg
+      className="shrink-0 text-[var(--muted-strong)] opacity-0 transition-opacity duration-150 group-hover/section:opacity-100"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+    >
+      <path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SectionHeader({ name, small }: { name: string; small?: boolean }) {
+  return (
+    <div className="flex items-center gap-x-[8px]">
+      <h2
+        className={
+          small
+            ? "text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]"
+            : "text-[20px] font-[652] leading-[28px] text-[var(--foreground)]"
+        }
+      >
+        {name}
+      </h2>
+      <SectionArrow />
+    </div>
+  );
+}
+
+/* ── Flows ── */
+
+function FlowScreen({ variant, kind }: { variant: "ios" | "web"; kind: "video" | "empty" | "more" }) {
+  const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
+  const rounded = variant === "ios" ? "rounded-[20px]" : "rounded-[14px]";
+  return (
+    <div
+      className={`relative flex items-center justify-center overflow-hidden ${aspect} ${rounded} ${
+        kind === "video" ? "bg-[var(--card-hover)]" : "bg-[var(--card)]"
+      }`}
+    >
+      {kind === "video" && (
+        <>
+          <div className="flex h-[56px] w-[56px] items-center justify-center rounded-full bg-white shadow-[0px_2px_8px_rgba(0,0,0,0.12)]">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M5 3.5L14 9L5 14.5V3.5Z" fill="#141414" />
+            </svg>
+          </div>
+          <span className="absolute bottom-[12px] right-[12px] rounded-[6px] bg-white px-[6px] py-[2px] text-[12px] font-semibold leading-[16px] text-[#141414]">
+            01:11
+          </span>
+        </>
+      )}
+      {kind === "more" && (
+        <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[var(--fill)] text-[var(--foreground)]">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FlowLabel() {
+  return (
+    <div className="flex flex-col gap-y-[2px]">
+      <div className="flex items-center gap-x-[6px] text-[16px] leading-[24px]">
+        <span className="font-semibold text-[var(--foreground)]">Flow</span>
+        <span className="text-[var(--muted-strong)]">in</span>
+        <span className="flex h-[20px] w-[20px] items-center justify-center rounded-[28%] bg-[var(--surface)]">
+          <LoaderDots size={11} />
+        </span>
+        <span className="font-semibold text-[var(--foreground)]">App</span>
+      </div>
+      <span className="text-[14px] leading-[20px] text-[var(--muted-strong)]">15 screens</span>
+    </div>
+  );
+}
+
+function FlowCard({ variant }: { variant: "ios" | "web" }) {
+  const cols = variant === "ios" ? 6 : 3;
+  const gridCols = variant === "ios" ? "grid-cols-6" : "grid-cols-3";
+  return (
+    <div className="flex flex-col gap-y-[16px]">
+      <div className={`grid gap-x-[16px] ${gridCols}`}>
+        {Array.from({ length: cols }).map((_, i) => (
+          <FlowScreen
+            key={i}
+            variant={variant}
+            kind={i === 0 ? "video" : i === cols - 1 ? "more" : "empty"}
+          />
+        ))}
+      </div>
+      <FlowLabel />
+    </div>
+  );
+}
+
+function FlowSection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+  return (
+    <div className="group/section flex flex-col gap-y-[24px]">
+      <SectionHeader name={name} />
+      <div className="flex flex-col gap-y-[32px]">
+        <FlowCard variant={variant} />
+        <FlowCard variant={variant} />
+      </div>
+    </div>
+  );
+}
+
+function FlowSectionSkeleton({ variant }: { variant: "ios" | "web" }) {
+  const cols = variant === "ios" ? 6 : 3;
+  const gridCols = variant === "ios" ? "grid-cols-6" : "grid-cols-3";
+  const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
+  const rounded = variant === "ios" ? "rounded-[20px]" : "rounded-[14px]";
+  return (
+    <div className="flex flex-col gap-y-[24px]">
+      <div className="h-[28px] w-[180px] animate-pulse rounded-[6px] bg-[var(--card)]" />
+      <div className="flex flex-col gap-y-[32px]">
+        {[0, 1].map((r) => (
+          <div key={r} className="flex flex-col gap-y-[16px]">
+            <div className={`grid gap-x-[16px] ${gridCols}`}>
+              {Array.from({ length: cols }).map((_, i) => (
+                <div key={i} className={`${aspect} ${rounded} animate-pulse bg-[var(--card)]`} />
+              ))}
+            </div>
+            <div className="h-[16px] w-[160px] animate-pulse rounded-[4px] bg-[var(--card)]" />
+          </div>
         ))}
       </div>
     </div>
@@ -432,6 +586,21 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
             : sections.map((s) => <ScreenSection key={s} name={s} variant={variant} />)}
+        </div>
+        <PaginationDots />
+      </div>
+    );
+  }
+
+  // Flow sections (Apps + Flows filter).
+  if (experience === "Apps" && filter === "Flows") {
+    const types = variant === "ios" ? FLOW_TYPES : reorderForWeb(FLOW_TYPES);
+    return (
+      <div className="pb-[24px]">
+        <div className="flex flex-col gap-y-[48px]">
+          {loading
+            ? [0, 1].map((s) => <FlowSectionSkeleton key={s} variant={variant} />)
+            : types.map((t) => <FlowSection key={t} name={t} variant={variant} />)}
         </div>
         <PaginationDots />
       </div>
