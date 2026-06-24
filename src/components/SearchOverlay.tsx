@@ -117,12 +117,19 @@ const recentSearches = [
   { label: "dropdown group", icon: "search" },
 ];
 
-const sidebarTabs = [
+const appsTabs = [
   { label: "Trending", icon: TrendingIcon },
   { label: "Categories", icon: CategoriesIcon },
   { label: "Screens", icon: ScreensIcon },
   { label: "UI Elements", icon: UIElementIcon },
   { label: "Flows", icon: FlowIcon },
+];
+
+const sitesTabs = [
+  { label: "Trending", icon: TrendingIcon },
+  { label: "Categories", icon: CategoriesIcon },
+  { label: "Sections", icon: ScreensIcon },
+  { label: "Styles", icon: UIElementIcon },
 ];
 
 const trendingApps = [
@@ -155,13 +162,45 @@ const allCategories = [
   "Graphics & Design", "Health & Fitness", "Jobs & Recruitment", "Lifestyle",
 ];
 
+const screensList = [
+  "Onboarding", "Sign Up", "Log In", "Home", "Dashboard", "Search",
+  "Checkout", "Settings", "Profile", "Paywall", "Verification", "Empty State",
+];
+
+const uiElementsList = [
+  "Button", "Card", "Dialog", "Table", "Stepper", "Banner",
+  "Side Navigation", "Progress Indicator", "Toggle", "Avatar", "Tooltip", "Tab Bar",
+];
+
+const flowsList = [
+  "Onboarding", "Editing Profile", "Filtering & Sorting",
+  "Browsing Tutorial", "Logging In", "Adding to Cart",
+];
+
+const sectionsList = [
+  "Hero", "Features", "Pricing", "Testimonials", "FAQ", "Footer", "CTA", "Newsletter",
+];
+
+const stylesList = [
+  "Minimal", "Bold", "Playful", "Brutalist", "Corporate", "Gradient", "Dark", "Monochrome",
+];
+
 // Items shown in the content area for each (non-Trending) sidebar tab.
 const TAB_ITEMS: Record<string, string[]> = {
   Categories: allCategories,
-  Screens: trendingScreens,
-  "UI Elements": uiElements,
-  Flows: flows,
+  Screens: screensList,
+  "UI Elements": uiElementsList,
+  Flows: flowsList,
+  Sections: sectionsList,
+  Styles: stylesList,
 };
+
+// Deterministic per-item count so the list looks populated without real data.
+function countFor(label: string): number {
+  let h = 0;
+  for (let i = 0; i < label.length; i++) h = (h * 31 + label.charCodeAt(i)) >>> 0;
+  return (h % 180) + 3;
+}
 
 /* ── Small icon for recent pills ── */
 function RecentIcon({ type }: { type: string }) {
@@ -273,9 +312,11 @@ interface SearchOverlayProps {
   open: boolean;
   onClose: () => void;
   initialTab?: string;
+  experience?: "Apps" | "Sites";
 }
 
-export default function SearchOverlay({ open, onClose, initialTab = "Trending" }: SearchOverlayProps) {
+export default function SearchOverlay({ open, onClose, initialTab = "Trending", experience = "Apps" }: SearchOverlayProps) {
+  const sidebarTabs = experience === "Sites" ? sitesTabs : appsTabs;
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -540,18 +581,23 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending" }
                 <div className="h-full grow overflow-y-auto pb-[40px] pl-[0px] pr-[0px] pt-[8px] min-[720px]:pl-[16px] min-[720px]:pr-[20px]">
                   <div className="flex flex-col gap-y-[24px] overflow-hidden">
                     {activeTab !== "Trending" ? (
-                      <div className="flex flex-col gap-y-[12px]">
-                        <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">
+                      <div className="flex flex-col gap-y-[8px]">
+                        <h4 className="px-[12px] text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">
                           {activeTab}
                         </h4>
-                        <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                        <div className="flex flex-col pr-[16px] min-[720px]:pr-[0px]">
                           {tabItems.map((item) => (
                             <button
                               key={item}
                               onClick={() => setQuery(item)}
-                              className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
+                              className="flex items-center justify-between gap-x-[12px] rounded-[12px] px-[12px] py-[10px] text-left transition-colors hover:bg-[var(--fill)]"
                             >
-                              {item}
+                              <span className="truncate text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">
+                                {item}
+                              </span>
+                              <span className="shrink-0 text-[14px] leading-[20px] text-[var(--muted-strong)]">
+                                {countFor(item)}
+                              </span>
                             </button>
                           ))}
                         </div>
