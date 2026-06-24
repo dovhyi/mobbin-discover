@@ -28,7 +28,7 @@ export default function TabsBar() {
         />
 
         {/* Divider */}
-        <div className="h-[20px] w-px shrink-0 bg-[rgba(255,255,255,0.08)]" />
+        <div className="h-[20px] w-px shrink-0 bg-[var(--border)]" />
 
         {/* Sort tabs — scrollable container */}
         <div className="scrollbar-none flex min-w-0 overflow-x-auto">
@@ -43,8 +43,8 @@ export default function TabsBar() {
                 }}
                 className={`whitespace-nowrap py-[4px] text-[16px] font-semibold leading-[24px] tracking-[0.144px] transition-colors ${
                   activeSort === tab
-                    ? "border-b-2 border-white text-white"
-                    : "border-b-2 border-transparent text-[#707070] hover:text-white"
+                    ? "border-b-2 border-[var(--foreground)] text-[var(--foreground)]"
+                    : "border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
                 }`}
               >
                 {tab}
@@ -56,15 +56,16 @@ export default function TabsBar() {
 
       {/* Right side: Filter — hidden on small mobile */}
       <div className="hidden min-[720px]:block">
-        <button className="flex h-[36px] shrink-0 items-center rounded-full px-[12px] transition-colors hover:bg-[rgba(255,255,255,0.06)]">
+        <button className="flex h-[36px] shrink-0 items-center rounded-full px-[12px] transition-colors hover:bg-[var(--surface)]">
           <div className="flex items-center justify-center gap-[8px]">
             <Image
               src="/assets/filter-icon.svg"
               alt=""
               width={20}
               height={20}
+              className="asset-invert"
             />
-            <span className="text-[14px] font-semibold leading-[20px] tracking-[0.144px] text-white">
+            <span className="text-[14px] font-semibold leading-[20px] tracking-[0.144px] text-[var(--foreground)]">
               Filter
             </span>
           </div>

@@ -24,7 +24,7 @@ function MobileIcon() {
 
 function DesktopIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-white">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-[var(--foreground)]">
       <path d="M19 15H10.9893C10.9451 15.7154 10.7494 16.4027 10.417 17H14V19H7V17C8.06342 17 8.86869 16.2309 8.98438 15H1V2H19V15ZM3 11H17V4H3V11Z" fill="currentColor" vectorEffect="non-scaling-stroke" />
     </svg>
   );
@@ -40,7 +40,7 @@ function SitesIcon() {
 
 function TrendingIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[var(--muted-strong)]">
       <path d="M18.001 5L10.4852 12.7259L7.35364 9.50677L1.7168 15.3012" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       <path d="M18.0008 12V5L11 5" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
     </svg>
@@ -49,7 +49,7 @@ function TrendingIcon() {
 
 function CategoriesIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[var(--muted-strong)]">
       <rect x="3" y="10" width="14" height="8" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
       <path d="M5 6H15" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       <path d="M7 2H13" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
@@ -59,7 +59,7 @@ function CategoriesIcon() {
 
 function ScreensIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[var(--muted-strong)]">
       <rect x="8" y="6" width="8" height="12" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
       <path d="M12 2H4V14" stroke="currentColor" strokeWidth="2" strokeLinecap="square" vectorEffect="non-scaling-stroke" />
     </svg>
@@ -68,7 +68,7 @@ function ScreensIcon() {
 
 function UIElementIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[var(--muted-strong)]">
       <path d="M2 10C2 6.68629 4.68629 4 8 4H12C15.3137 4 18 6.68629 18 10C18 13.3137 15.3137 16 12 16H8C4.68629 16 2 13.3137 2 10Z" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       <circle cx="12" cy="10" r="3" fill="currentColor" />
     </svg>
@@ -77,7 +77,7 @@ function UIElementIcon() {
 
 function FlowIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[#adadad]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0 text-[var(--muted-strong)]">
       <path d="M4 17C5.65685 17 7 15.6569 7 14C7 12.3431 5.65685 11 4 11C2.34315 11 1 12.3431 1 14C1 15.6569 2.34315 17 4 17Z" fill="currentColor" />
       <path d="M13 3H16H19V6V9H16H13V6V3Z" fill="currentColor" />
       <path d="M4 9V7C4 5.34315 5.34315 4 7 4C8.65685 4 10 5.34315 10 7V13C10 14.6569 11.3431 16 13 16C14.6569 16 16 14.6569 16 13V11" stroke="currentColor" strokeWidth="2" vectorEffect="non-scaling-stroke" />
@@ -153,7 +153,7 @@ const textInScreenshot = ['"Forgot Password"', '"Contact Sales"', '"Bluetooth"']
 function RecentIcon({ type }: { type: string }) {
   if (type === "screens") return <ScreensIcon />;
   if (type === "ui") return <UIElementIcon />;
-  return <SearchIcon className="text-white" />;
+  return <SearchIcon className="text-[var(--foreground)]" />;
 }
 
 /* ── Flow icons (simplified) ── */
@@ -190,8 +190,8 @@ function ResultRow({ item, selected, rowRef }: { item: SearchResultItem; selecte
   return (
     <div
       ref={rowRef}
-      className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-white transition-colors ${
-        selected ? "bg-[rgba(237,237,237,0.08)]" : "hover:bg-[rgba(237,237,237,0.08)]"
+      className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors ${
+        selected ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
       }`}
     >
       <div className="shrink-0">
@@ -201,7 +201,7 @@ function ResultRow({ item, selected, rowRef }: { item: SearchResultItem; selecte
             style={{ backgroundColor: item.color || "#333" }}
           />
         ) : (
-          <div className="flex size-[40px] items-center justify-center rounded-[12px] bg-[rgba(237,237,237,0.08)]">
+          <div className="flex size-[40px] items-center justify-center rounded-[12px] bg-[var(--fill)]">
             <ResultIcon type={item.type} />
           </div>
         )}
@@ -209,7 +209,7 @@ function ResultRow({ item, selected, rowRef }: { item: SearchResultItem; selecte
       <div className="flex grow flex-col overflow-hidden">
         <span className="truncate text-[16px] font-semibold leading-[24px]">{item.name}</span>
         {item.description && (
-          <span className="truncate text-[14px] leading-[20px] text-[#adadad]">{item.description}</span>
+          <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{item.description}</span>
         )}
       </div>
     </div>
@@ -233,7 +233,7 @@ function ResultGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[#adadad]">
+      <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">
         {heading}
       </div>
       <div>
@@ -418,7 +418,7 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         className={`fixed inset-0 z-50 flex flex-col items-stretch transition-all duration-200 ease-out min-[720px]:inset-auto min-[720px]:top-[120px] min-[720px]:left-1/2 min-[720px]:w-[816px] min-[720px]:max-w-full min-[720px]:-translate-x-1/2 ${visible ? "opacity-100 min-[720px]:translate-y-0 min-[720px]:scale-100" : "opacity-0 min-[720px]:-translate-y-[16px] min-[720px]:scale-[0.98]"}`}
       >
         <div
-          className={`flex-1 overflow-hidden bg-[#1a1a1a] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[rgba(38,38,38,0.88)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
+          className={`flex-1 overflow-hidden bg-[var(--background-elevated)] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[var(--overlay)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
             hasQuery
               ? "grid grid-rows-[auto_1fr]"
               : "grid grid-rows-[auto_auto_1fr]"
@@ -429,7 +429,7 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             <div className="flex grow items-center gap-x-[8px]">
               <input
                 ref={inputRef}
-                className="grow bg-transparent text-[16px] font-[456] leading-[24px] text-white placeholder:text-[#707070] outline-none"
+                className="grow bg-transparent text-[16px] font-[456] leading-[24px] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none"
                 placeholder="Web Apps, Screens, UI Elements, Flows or Keywords..."
                 type="text"
                 autoFocus
@@ -442,7 +442,7 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               {hasQuery && (
                 <button
                   onClick={() => setQuery("")}
-                  className="shrink-0 text-[#707070] transition-colors hover:text-white"
+                  className="shrink-0 text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path fillRule="evenodd" clipRule="evenodd" d="M10 19C14.9706 19 19 14.9706 19 10C19 5.02944 14.9706 1 10 1C5.02944 1 1 5.02944 1 10C1 14.9706 5.02944 19 10 19ZM6.0009 7.41414L8.58379 9.99703L6.0009 12.5799L7.41511 13.9941L9.99801 11.4112L12.5809 13.9941L13.9951 12.5799L11.4122 9.99703L13.9951 7.41414L12.5809 5.99992L9.99801 8.58282L7.41511 5.99992L6.0009 7.41414Z" fill="currentColor" />
@@ -450,20 +450,20 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-x-[16px] text-[#707070]">
-              <button className="hidden transition-colors hover:text-white min-[720px]:block">
+            <div className="flex items-center gap-x-[16px] text-[var(--muted)]">
+              <button className="hidden transition-colors hover:text-[var(--foreground)] min-[720px]:block">
                 <MobileIcon />
               </button>
-              <button className="hidden text-white min-[720px]:block">
+              <button className="hidden text-[var(--foreground)] min-[720px]:block">
                 <DesktopIcon />
               </button>
-              <button className="hidden transition-colors hover:text-white min-[720px]:block">
+              <button className="hidden transition-colors hover:text-[var(--foreground)] min-[720px]:block">
                 <SitesIcon />
               </button>
               {/* Mobile cancel button */}
               <button
                 onClick={onClose}
-                className="shrink-0 text-[14px] font-medium text-[#adadad] transition-colors hover:text-white min-[720px]:hidden"
+                className="shrink-0 text-[14px] font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--foreground)] min-[720px]:hidden"
               >
                 Cancel
               </button>
@@ -479,12 +479,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                   <button
                     key={item.label}
                     onClick={() => setQuery(item.label)}
-                    className="group flex shrink-0 items-center gap-x-[8px] rounded-full bg-[rgba(237,237,237,0.08)] px-[12px] py-[8px] transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                    className="group flex shrink-0 items-center gap-x-[8px] rounded-full bg-[var(--fill)] px-[12px] py-[8px] transition-colors hover:bg-[var(--fill-hover)]"
                   >
-                    <div className="size-[20px] shrink-0 text-white">
+                    <div className="size-[20px] shrink-0 text-[var(--foreground)]">
                       <RecentIcon type={item.icon} />
                     </div>
-                    <span className="whitespace-nowrap text-[14px] font-semibold leading-[20px] text-white">
+                    <span className="whitespace-nowrap text-[14px] font-semibold leading-[20px] text-[var(--foreground)]">
                       {item.label}
                     </span>
                   </button>
@@ -498,10 +498,10 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     {sidebarTabs.map((tab, i) => (
                       <button
                         key={tab.label}
-                        className={`flex items-center gap-x-[8px] rounded-[12px] px-[12px] py-[8px] text-white transition-colors ${
+                        className={`flex items-center gap-x-[8px] rounded-[12px] px-[12px] py-[8px] text-[var(--foreground)] transition-colors ${
                           i === 0
-                            ? "bg-[rgba(237,237,237,0.08)]"
-                            : "hover:bg-[rgba(237,237,237,0.08)]"
+                            ? "bg-[var(--fill)]"
+                            : "hover:bg-[var(--fill)]"
                         }`}
                       >
                         <tab.icon />
@@ -525,7 +525,7 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                             className="size-[64px] shrink-0 rounded-[30%]"
                             style={{ backgroundColor: app.color }}
                           />
-                          <span className="w-full truncate text-center text-[12px] font-semibold leading-[16px] text-white">
+                          <span className="w-full truncate text-center text-[12px] font-semibold leading-[16px] text-[var(--foreground)]">
                             {app.name}
                           </span>
                         </button>
@@ -533,12 +533,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     </div>
 
                     <div className="flex flex-col gap-y-[12px]">
-                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Screens</h4>
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Screens</h4>
                       <div className="grid grid-cols-4 gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
                         {trendingScreens.map((screen) => (
                           <button
                             key={screen}
-                            className="relative flex aspect-square cursor-pointer items-start overflow-hidden rounded-[16px] bg-[rgba(237,237,237,0.08)] p-[12px] text-left text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                            className="relative flex aspect-square cursor-pointer items-start overflow-hidden rounded-[16px] bg-[var(--fill)] p-[12px] text-left text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {screen}
                           </button>
@@ -547,12 +547,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     </div>
 
                     <div className="flex flex-col gap-y-[12px]">
-                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">UI Elements</h4>
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">UI Elements</h4>
                       <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
                         {uiElements.map((el) => (
                           <button
                             key={el}
-                            className="cursor-pointer rounded-full bg-[rgba(237,237,237,0.08)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                            className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {el}
                           </button>
@@ -561,14 +561,14 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     </div>
 
                     <div className="flex flex-col gap-y-[12px]">
-                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Flows</h4>
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Flows</h4>
                       <div className="grid grid-cols-4 gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
                         {flows.map((flow) => (
                           <button
                             key={flow}
-                            className="flex aspect-square cursor-pointer flex-col justify-between overflow-hidden rounded-[16px] bg-[rgba(237,237,237,0.08)] p-[12px] text-left transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                            className="flex aspect-square cursor-pointer flex-col justify-between overflow-hidden rounded-[16px] bg-[var(--fill)] p-[12px] text-left transition-colors hover:bg-[var(--fill-hover)]"
                           >
-                            <span className="text-[16px] font-semibold leading-[24px] text-white">{flow}</span>
+                            <span className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{flow}</span>
                             <FlowCardIcon name={flow} />
                           </button>
                         ))}
@@ -576,12 +576,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     </div>
 
                     <div className="flex flex-col gap-y-[12px]">
-                      <h4 className="text-[14px] font-semibold leading-[20px] text-[#adadad]">Text in Screenshot</h4>
+                      <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Text in Screenshot</h4>
                       <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
                         {textInScreenshot.map((text) => (
                           <button
                             key={text}
-                            className="cursor-pointer rounded-full bg-[rgba(237,237,237,0.08)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-white transition-colors hover:bg-[rgba(237,237,237,0.14)]"
+                            className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {text}
                           </button>
@@ -678,7 +678,7 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
                   {/* Looking for something else? */}
                   <div>
-                    <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[#adadad]">
+                    <div className="px-[8px] pb-[4px] text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">
                       Looking for something else?
                     </div>
                     <ResultRow

@@ -50,11 +50,11 @@ export default function SegmentedToggle({
   return (
     <div
       ref={containerRef}
-      className="relative flex h-[36px] w-fit max-w-full items-center gap-[2px] rounded-full bg-[rgba(255,255,255,0.08)] p-[4px]"
+      className="relative flex h-[36px] w-fit max-w-full items-center gap-[2px] rounded-full bg-[var(--border)] p-[4px]"
     >
       {/* Sliding active background */}
       <div
-        className="absolute top-[4px] h-[28px] rounded-full bg-[#141414] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] transition-all duration-200"
+        className="absolute top-[4px] h-[28px] rounded-full bg-[var(--background)] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] transition-all duration-200"
         style={{ left: indicator.left, width: indicator.width }}
       />
 
@@ -72,7 +72,7 @@ export default function SegmentedToggle({
             }
           }}
           className={`relative z-10 flex h-[28px] items-center justify-center rounded-full px-[10px] text-[14px] font-semibold leading-[20px] tracking-[0.196px] transition-colors duration-200 ${
-            value === option.id ? "text-white" : "text-[#707070]"
+            value === option.id ? "text-[var(--foreground)]" : "text-[var(--muted)]"
           }`}
         >
           {option.label}

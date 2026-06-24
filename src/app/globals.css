@@ -5,8 +5,47 @@
 }
 
 :root {
+  color-scheme: light dark;
+
   --max-content-width: 1920px;
   --container-x-padding: 20px;
+
+  /* ── Theme tokens (light is the default) ── */
+  --background: #ffffff;
+  --background-elevated: #ffffff;
+  --overlay: rgba(250, 250, 250, 0.9);
+  --foreground: #1a1a1a;
+  --muted: #a0a0a0;
+  --muted-strong: #6e6e6e;
+  --card: #f2f2f2;
+  --card-hover: #ececec;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --surface: rgba(0, 0, 0, 0.05);
+  --surface-hover: rgba(0, 0, 0, 0.09);
+  --fill: rgba(0, 0, 0, 0.05);
+  --fill-hover: rgba(0, 0, 0, 0.09);
+  --scrollbar: rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #141414;
+    --background-elevated: #1a1a1a;
+    --overlay: rgba(38, 38, 38, 0.88);
+    --foreground: #ffffff;
+    --muted: #707070;
+    --muted-strong: #adadad;
+    --card: #222222;
+    --card-hover: #272727;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.1);
+    --fill: rgba(237, 237, 237, 0.08);
+    --fill-hover: rgba(237, 237, 237, 0.14);
+    --scrollbar: rgba(255, 255, 255, 0.15);
+  }
 }
 
 @media (min-width: 720px) {
@@ -28,11 +67,18 @@
 }
 
 body {
-  background: #141414;
-  color: #fff;
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-ms-saans), -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
   overflow-x: hidden;
+}
+
+/* Monochrome (white) image assets — flip to dark in light mode so they stay visible */
+@media (prefers-color-scheme: light) {
+  .asset-invert {
+    filter: invert(1);
+  }
 }
 
 ::-webkit-scrollbar {
@@ -42,7 +88,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 

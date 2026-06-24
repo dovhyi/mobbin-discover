@@ -8,15 +8,23 @@ interface NavbarProps {
   activePage?: "discover" | "for-you" | "community";
 }
 
+function BellIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 20 20" fill="none">
+      <path fillRule="evenodd" clipRule="evenodd" d="M10 3C11.6569 3 13 4.34315 13 6V9.33301L13.2002 9.59961L16 13.332V14H12.2361H7.76389H4V13.332L6.7998 9.59961L7 9.33301V6C7 4.34315 8.34315 3 10 3ZM7 16H2V12.667L2.2002 12.4004L5 8.66699V6C5 3.23858 7.23858 1 10 1C12.7614 1 15 3.23858 15 6V8.66699L17.7998 12.4004L18 12.667V16H13C13 17.6569 11.6569 19 10 19C8.34315 19 7 17.6569 7 16Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function Navbar({ onSearchClick, activePage = "discover" }: NavbarProps) {
   const linkClass = (page: string) =>
-    `text-[15px] font-semibold leading-[24px] tracking-[0.144px] transition-colors ${
-      activePage === page ? "text-white" : "text-[#707070] hover:text-white"
+    `text-[16px] font-semibold leading-[22px] tracking-[0.2px] transition-colors ${
+      activePage === page ? "text-[var(--foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"
     }`;
 
   return (
     <header className="sticky top-0 z-11">
-      <nav className="border-b border-[rgba(255,255,255,0.08)] bg-[#141414] min-[1160px]:border-0">
+      <nav className="border-b border-[var(--border)] bg-[var(--background)] min-[1160px]:border-0">
         <div className="relative">
           <div
             className="mx-auto grid w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[1fr_auto] items-center gap-x-[8px] min-[720px]:gap-x-[12px] min-[1160px]:grid-cols-[1fr_minmax(auto,520px)_1fr] min-[1160px]:grid-rows-1 min-[1160px]:py-[4px]"
@@ -35,6 +43,7 @@ export default function Navbar({ onSearchClick, activePage = "discover" }: Navba
                   alt="Mobbin"
                   width={43}
                   height={20}
+                  className="asset-invert"
                 />
               </Link>
               {/* Desktop nav links */}
@@ -56,13 +65,13 @@ export default function Navbar({ onSearchClick, activePage = "discover" }: Navba
             {/* Center: Search */}
             <div className="overflow-hidden px-[4px] py-[8px]">
               <div className="group relative">
-                <button onClick={onSearchClick} className="relative flex h-[40px] w-full min-w-0 cursor-pointer items-center justify-start gap-x-[8px] rounded-[24px] bg-[rgba(255,255,255,0.06)] px-[16px] text-[#707070] transition-colors hover:bg-[rgba(255,255,255,0.10)] min-[1160px]:h-[48px] min-[1160px]:gap-x-[12px] min-[1160px]:px-[20px]">
+                <button onClick={onSearchClick} className="relative flex h-[40px] w-full min-w-0 cursor-pointer items-center justify-start gap-x-[8px] rounded-[24px] bg-[var(--surface)] px-[16px] text-[var(--muted)] transition-colors hover:bg-[var(--surface-hover)] min-[1160px]:h-[48px] min-[1160px]:gap-x-[12px] min-[1160px]:px-[20px]">
                   <Image
                     src="/assets/search-icon.svg"
                     alt=""
                     width={16}
                     height={16}
-                    className="shrink-0 min-[1160px]:h-[20px] min-[1160px]:w-[20px]"
+                    className="asset-invert shrink-0 min-[1160px]:h-[20px] min-[1160px]:w-[20px]"
                   />
                   <span className="truncate text-[16px] font-normal leading-[24px]">
                     Search on Web...
@@ -84,27 +93,23 @@ export default function Navbar({ onSearchClick, activePage = "discover" }: Navba
                           alt="Saved"
                           width={28}
                           height={28}
+                          className="asset-invert"
                         />
                       </div>
                     </a>
                   </div>
-                  {/* Settings icon — hidden below 1024 */}
+                  {/* Notifications (bell) — hidden below 1024 */}
                   <div className="hidden min-[1024px]:inline-flex">
-                    <a href="#" className="p-[4px]">
-                      <div className="h-[28px] w-[28px]">
-                        <Image
-                          src="/assets/settings-icon.png"
-                          alt="Community"
-                          width={28}
-                          height={28}
-                        />
+                    <a href="#" className="p-[4px] text-[var(--foreground)]">
+                      <div className="flex h-[28px] w-[28px] items-center justify-center">
+                        <BellIcon />
                       </div>
                     </a>
                   </div>
                 </div>
                 {/* Invite & earn — hidden below 1024 */}
                 <div className="hidden items-center justify-center min-[1024px]:flex">
-                  <button className="relative h-[36px] cursor-pointer rounded-full border border-[rgba(255,255,255,0.16)] px-[12px] text-[14px] font-semibold leading-[20px] text-white transition-colors hover:bg-[rgba(255,255,255,0.06)]">
+                  <button className="relative h-[36px] cursor-pointer rounded-full border border-[var(--border-strong)] px-[12px] text-[14px] font-semibold leading-[20px] text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]">
                     <span className="flex items-center justify-center gap-x-[8px]">
                       <span className="truncate">Invite &amp; earn</span>
                     </span>
@@ -113,7 +118,7 @@ export default function Navbar({ onSearchClick, activePage = "discover" }: Navba
                 {/* Avatar */}
                 <button className="transition-opacity hover:opacity-90">
                   <div className="relative">
-                    <span className="relative block shrink-0 overflow-hidden rounded-full bg-[#141414]" style={{ width: 36, height: 36 }}>
+                    <span className="relative block shrink-0 overflow-hidden rounded-full bg-[var(--background)]" style={{ width: 36, height: 36 }}>
                       <Image
                         src="/assets/avatar.png"
                         alt="Profile"

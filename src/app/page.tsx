@@ -26,7 +26,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="bg-[#141414]">
+    <div className="bg-[var(--background)]">
       <Navbar onSearchClick={openSearch} />
       <SearchOverlay open={searchOpen} onClose={closeSearch} />
       <main

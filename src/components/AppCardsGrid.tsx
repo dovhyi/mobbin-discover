@@ -61,7 +61,7 @@ function AppCard({ app }: { app: AppData }) {
       {/* Card / Screenshot area — square aspect ratio */}
       <a
         href="#"
-        className="relative block overflow-hidden rounded-[28px] bg-[#222222] transition-colors duration-300 aspect-square group-hover/cell:bg-[#272727]"
+        className="relative block overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 aspect-square group-hover/cell:bg-[var(--card-hover)]"
       >
         {/* Screenshot centered inside the square card */}
         <div className="flex size-full items-center justify-center">
@@ -73,7 +73,7 @@ function AppCard({ app }: { app: AppData }) {
               height={500}
               className="w-full object-cover"
             />
-            <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_rgba(255,255,255,0.16)]" />
+            <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
           </div>
         </div>
 
@@ -101,7 +101,7 @@ function AppCard({ app }: { app: AppData }) {
       <section className="pointer-events-none flex w-full items-center gap-x-[8px]">
         {/* Logo */}
         <div
-          className="relative h-[40px] w-[40px] shrink-0 overflow-hidden bg-[rgba(255,255,255,0.06)]"
+          className="relative h-[40px] w-[40px] shrink-0 overflow-hidden bg-[var(--surface)]"
           style={{ borderRadius: "30%" }}
         >
           <Image
@@ -111,16 +111,16 @@ function AppCard({ app }: { app: AppData }) {
             className="object-cover"
           />
           <div
-            className="pointer-events-none absolute inset-0 shadow-[inset_0px_0px_0px_0.5px_rgba(255,255,255,0.16)]"
+            className="pointer-events-none absolute inset-0 shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]"
             style={{ borderRadius: "30%" }}
           />
         </div>
         {/* Text */}
         <div className="flex min-w-0 grow flex-col">
-          <h3 className="truncate text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-white">
+          <h3 className="truncate text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
             {app.name}
           </h3>
-          <p className="truncate text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[#adadad]">
+          <p className="truncate text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]">
             {app.description}
           </p>
         </div>

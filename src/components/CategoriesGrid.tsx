@@ -39,7 +39,7 @@ export default function CategoriesGrid() {
       {categoriesData.map((category) => (
         <div key={category.title} className="flex flex-col gap-y-[8px]">
           <button className="group flex w-fit items-center gap-x-[4px]">
-            <h3 className="text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[#adadad]">
+            <h3 className="text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]">
               {category.title}
             </h3>
             <Image
@@ -47,7 +47,7 @@ export default function CategoriesGrid() {
               alt=""
               width={16}
               height={16}
-              className="opacity-0 transition-opacity group-hover:opacity-100"
+              className="asset-invert opacity-0 transition-opacity group-hover:opacity-100"
             />
           </button>
           <ul className="group/list flex flex-col">
@@ -55,7 +55,7 @@ export default function CategoriesGrid() {
               <li key={item}>
                 <a
                   href="#"
-                  className="text-[24px] font-[652] leading-[30px] text-white transition-opacity duration-150 group-hover/list:opacity-40 hover:!opacity-100"
+                  className="text-[24px] font-[652] leading-[30px] text-[var(--foreground)] transition-opacity duration-150 group-hover/list:opacity-40 hover:!opacity-100"
                 >
                   {item}
                 </a>
