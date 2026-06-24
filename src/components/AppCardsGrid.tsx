@@ -127,7 +127,7 @@ function AppInfo({
   );
 }
 
-function LoaderDots({ size = 18 }: { size?: number }) {
+export function LoaderDots({ size = 18 }: { size?: number }) {
   const dots: [number, number][] = [
     [19, 12], [16.95, 16.95], [12, 19], [7.05, 16.95],
     [5, 12], [7.05, 7.05], [12, 5], [16.95, 7.05],
@@ -268,7 +268,7 @@ function SiteCard({ site }: { site: Site }) {
   );
 }
 
-function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
+export function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
   return (
     <div className="flex flex-col gap-y-[16px]">
       {variant === "ios" ? (
@@ -286,7 +286,7 @@ function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
 }
 
 // Bare screen (no chrome) — used by the Screens / UI Elements filters.
-function BareScreenCard({ variant }: { variant: "ios" | "web" }) {
+export function BareScreenCard({ variant }: { variant: "ios" | "web" }) {
   const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
   const rounded = variant === "ios" ? "rounded-[28px]" : "rounded-[16px]";
   return (
@@ -333,12 +333,18 @@ function BareSkeletonCard({ variant }: { variant: "ios" | "web" }) {
 
 /* ── Sections ── */
 
+const categoryGridCols = (variant: "ios" | "web") =>
+  variant === "ios"
+    ? "grid-cols-2 min-[720px]:grid-cols-4"
+    : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
+
 function CategorySection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+  const count = variant === "ios" ? 4 : 3;
   return (
     <div className="group/section flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
       <SectionHeader name={name} />
-      <div className="grid grid-cols-2 gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px]">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] ${categoryGridCols(variant)}`}>
+        {Array.from({ length: count }).map((_, i) => (
           <PlaceholderCard key={i} variant={variant} />
         ))}
       </div>
@@ -346,12 +352,14 @@ function CategorySection({ name, variant }: { name: string; variant: "ios" | "we
   );
 }
 
-function CategorySectionSkeleton({ aspect }: { aspect: string }) {
+function CategorySectionSkeleton({ variant }: { variant: "ios" | "web" }) {
+  const count = variant === "ios" ? 4 : 3;
+  const aspect = variant === "ios" ? "aspect-[3/5]" : "aspect-square";
   return (
     <div className="flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
       <div className="h-[28px] w-[160px] animate-pulse rounded-[6px] bg-[var(--card)]" />
-      <div className="grid grid-cols-2 gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px]">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] ${categoryGridCols(variant)}`}>
+        {Array.from({ length: count }).map((_, i) => (
           <SkeletonCard key={i} aspect={aspect} />
         ))}
       </div>
@@ -489,7 +497,7 @@ function FlowLabel() {
   );
 }
 
-function FlowCard({ variant }: { variant: "ios" | "web" }) {
+export function FlowCard({ variant }: { variant: "ios" | "web" }) {
   const count = variant === "ios" ? 8 : 5;
   return (
     <div className="flex flex-col gap-y-[16px]">
@@ -581,13 +589,12 @@ export default function AppCardsGrid({
 
   // Category-grouped sections (Apps + Categories filter).
   if (experience === "Apps" && filter === "Categories") {
-    const aspect = variant === "ios" ? "aspect-[3/5]" : "aspect-square";
     const cats = variant === "ios" ? CATEGORIES : reorderForWeb(CATEGORIES);
     return (
       <div className="pb-[24px]">
         <div className="flex flex-col gap-y-[80px]">
           {loading
-            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} aspect={aspect} />)
+            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant={variant} />)
             : cats.map((c) => <CategorySection key={c} name={c} variant={variant} />)}
         </div>
         <PaginationDots />
@@ -632,7 +639,7 @@ export default function AppCardsGrid({
       <div className="pb-[24px]">
         <div className="flex flex-col gap-y-[80px]">
           {loading
-            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} aspect="aspect-square" />)
+            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant="web" />)
             : CATEGORIES.map((c) => <CategorySection key={c} name={c} variant="web" />)}
         </div>
         <PaginationDots />
