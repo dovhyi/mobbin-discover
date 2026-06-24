@@ -566,7 +566,7 @@ export default function AppCardsGrid({
     const cats = variant === "ios" ? CATEGORIES : reorderForWeb(CATEGORIES);
     return (
       <div className="pb-[24px]">
-        <div className="flex flex-col gap-y-[48px]">
+        <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} aspect={aspect} />)
             : cats.map((c) => <CategorySection key={c} name={c} variant={variant} />)}
@@ -582,7 +582,7 @@ export default function AppCardsGrid({
     const sections = variant === "ios" ? base : reorderForWeb(base);
     return (
       <div className="pb-[24px]">
-        <div className="flex flex-col gap-y-[48px]">
+        <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
             : sections.map((s) => <ScreenSection key={s} name={s} variant={variant} />)}
@@ -597,7 +597,7 @@ export default function AppCardsGrid({
     const types = variant === "ios" ? FLOW_TYPES : reorderForWeb(FLOW_TYPES);
     return (
       <div className="pb-[24px]">
-        <div className="flex flex-col gap-y-[48px]">
+        <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <FlowSectionSkeleton key={s} variant={variant} />)
             : types.map((t) => <FlowSection key={t} name={t} variant={variant} />)}
