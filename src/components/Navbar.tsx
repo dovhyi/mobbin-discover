@@ -5,10 +5,10 @@ import Link from "next/link";
 
 interface NavbarProps {
   onSearchClick?: () => void;
-  activePage?: "apps" | "sites";
+  activePage?: "discover" | "for-you" | "community";
 }
 
-export default function Navbar({ onSearchClick, activePage = "apps" }: NavbarProps) {
+export default function Navbar({ onSearchClick, activePage = "discover" }: NavbarProps) {
   const linkClass = (page: string) =>
     `text-[15px] font-semibold leading-[24px] tracking-[0.144px] transition-colors ${
       activePage === page ? "text-white" : "text-[#707070] hover:text-white"
@@ -40,11 +40,14 @@ export default function Navbar({ onSearchClick, activePage = "apps" }: NavbarPro
               {/* Desktop nav links */}
               <div className="hidden min-[1160px]:block">
                 <div className="flex items-center gap-x-[16px] min-[1160px]:gap-x-[24px]">
-                  <Link href="/" className={linkClass("apps")}>
-                    Apps
+                  <Link href="/" className={linkClass("discover")}>
+                    Discover
                   </Link>
-                  <Link href="#" className={linkClass("sites")}>
-                    Sites
+                  <Link href="#" className={linkClass("for-you")}>
+                    For you
+                  </Link>
+                  <Link href="#" className={linkClass("community")}>
+                    Community
                   </Link>
                 </div>
               </div>
@@ -127,11 +130,14 @@ export default function Navbar({ onSearchClick, activePage = "apps" }: NavbarPro
             {/* Mobile: Nav tabs on second row — hidden at 840+ */}
             <div className="col-span-full row-start-2 min-[1160px]:hidden">
               <div className="flex h-[44px] items-center gap-x-[16px] py-[4px] min-[1160px]:gap-x-[24px] min-[1160px]:py-0">
-                <Link href="/" className={linkClass("apps")}>
-                  Apps
+                <Link href="/" className={linkClass("discover")}>
+                  Discover
                 </Link>
-                <Link href="#" className={linkClass("sites")}>
-                  Sites
+                <Link href="#" className={linkClass("for-you")}>
+                  For you
+                </Link>
+                <Link href="#" className={linkClass("community")}>
+                  Community
                 </Link>
               </div>
             </div>
