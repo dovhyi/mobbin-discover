@@ -37,7 +37,7 @@ export default function Home() {
       >
         {/* Cards section */}
         <div
-          className="flex flex-col gap-y-[24px] py-[32px]"
+          className="flex flex-col gap-y-[80px] py-[32px]"
           style={{
             paddingLeft: "var(--container-x-padding)",
             paddingRight: "var(--container-x-padding)",
