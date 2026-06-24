@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Navbar from "@/components/Navbar";
-import TabsBar from "@/components/TabsBar";
+import TabsBar, { sortOptionsFor } from "@/components/TabsBar";
 import AppCardsGrid from "@/components/AppCardsGrid";
 import SearchOverlay from "@/components/SearchOverlay";
 
@@ -11,13 +11,23 @@ type Platform = "iOS" | "Web";
 
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTab, setSearchTab] = useState("Trending");
   const [experience, setExperience] = useState<Experience>("Apps");
   const [platform, setPlatform] = useState<Platform>("iOS");
   const [filter, setFilter] = useState("Trending");
   const [sort, setSort] = useState("Latest");
 
-  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const openSearch = useCallback(() => {
+    setSearchTab("Trending");
+    setSearchOpen(true);
+  }, []);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
+
+  // Open the search modal on the tab matching the current page filter.
+  const openFilters = useCallback(() => {
+    setSearchTab(filter);
+    setSearchOpen(true);
+  }, [filter]);
 
   // Hydrate selections from the URL on first mount.
   useEffect(() => {
@@ -51,8 +61,20 @@ export default function Home() {
   const changeExperience = useCallback((value: Experience) => {
     setExperience(value);
     setFilter("Trending");
-    setSort("Latest");
+    setSort(sortOptionsFor(value, "Trending")[0]);
   }, []);
+
+  // Switching filter keeps sort valid (the available sort options differ).
+  const changeFilter = useCallback(
+    (value: string) => {
+      setFilter(value);
+      setSort((prev) => {
+        const options = sortOptionsFor(experience, value);
+        return options.includes(prev) ? prev : options[0];
+      });
+    },
+    [experience],
+  );
 
   // CMD+K / Ctrl+K shortcut to open search
   useEffect(() => {
@@ -69,7 +91,7 @@ export default function Home() {
   return (
     <div className="bg-[var(--background)]">
       <Navbar onSearchClick={openSearch} />
-      <SearchOverlay open={searchOpen} onClose={closeSearch} />
+      <SearchOverlay open={searchOpen} onClose={closeSearch} initialTab={searchTab} />
       <main
         className="mx-auto flex w-full grow flex-col"
         style={{
@@ -91,7 +113,8 @@ export default function Home() {
             platform={platform}
             onPlatformChange={setPlatform}
             filter={filter}
-            onFilterChange={setFilter}
+            onFilterChange={changeFilter}
+            onFilterHeaderClick={openFilters}
             sort={sort}
             onSortChange={setSort}
           />

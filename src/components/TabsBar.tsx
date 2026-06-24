@@ -10,8 +10,23 @@ interface TabsBarProps {
   onPlatformChange: (value: Platform) => void;
   filter: string;
   onFilterChange: (value: string) => void;
+  onFilterHeaderClick?: () => void;
   sort: string;
   onSortChange: (value: string) => void;
+}
+
+function HeaderArrow() {
+  return (
+    <svg
+      className="shrink-0 text-[var(--muted-strong)] opacity-0 transition-opacity duration-150 group-hover/header:opacity-100"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path d="M3 8H13M13 8L8.5 3.5M13 8L8.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 const FILTERS: Record<Experience, string[]> = {
@@ -19,10 +34,15 @@ const FILTERS: Record<Experience, string[]> = {
   Sites: ["Trending", "Categories", "Sections", "Styles"],
 };
 
-const SORTS: Record<Experience, string[]> = {
-  Apps: ["Latest", "Most popular", "Top Rated"],
-  Sites: ["Latest", "Most popular"],
-};
+// Filters whose results are ranked rather than dated.
+const SECTIONED_FILTERS = ["Screens", "UI Elements", "Flows", "Sections", "Styles"];
+
+export function sortOptionsFor(experience: Experience, filter: string): string[] {
+  if (SECTIONED_FILTERS.includes(filter)) return ["Trending", "Most popular"];
+  return experience === "Sites"
+    ? ["Latest", "Most popular"]
+    : ["Latest", "Most popular", "Top Rated"];
+}
 
 function Column({
   title,
@@ -30,18 +50,30 @@ function Column({
   value,
   onChange,
   className,
+  onHeaderClick,
 }: {
   title: string;
   items: string[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  onHeaderClick?: () => void;
 }) {
+  const headingClass =
+    "text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]";
   return (
     <div className={`flex flex-col gap-y-[8px] ${className ?? ""}`}>
-      <h3 className="text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]">
-        {title}
-      </h3>
+      {onHeaderClick ? (
+        <button
+          onClick={onHeaderClick}
+          className="group/header flex w-fit items-center gap-x-[6px]"
+        >
+          <h3 className={headingClass}>{title}</h3>
+          <HeaderArrow />
+        </button>
+      ) : (
+        <h3 className={headingClass}>{title}</h3>
+      )}
       <ul className="flex flex-col">
         {items.map((item) => {
           const active = value === item;
@@ -72,6 +104,7 @@ export default function TabsBar({
   onPlatformChange,
   filter,
   onFilterChange,
+  onFilterHeaderClick,
   sort,
   onSortChange,
 }: TabsBarProps) {
@@ -98,12 +131,13 @@ export default function TabsBar({
         items={FILTERS[experience]}
         value={filter}
         onChange={onFilterChange}
+        onHeaderClick={onFilterHeaderClick}
         className={experience === "Sites" ? "min-[1024px]:col-span-2" : ""}
       />
 
       <Column
         title="Sort"
-        items={SORTS[experience]}
+        items={sortOptionsFor(experience, filter)}
         value={sort}
         onChange={onSortChange}
       />

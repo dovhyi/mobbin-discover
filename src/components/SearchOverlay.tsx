@@ -149,6 +149,20 @@ const flows = ["Onboarding", "Editing Profile", "Filtering & Sorting", "Browsing
 
 const textInScreenshot = ['"Forgot Password"', '"Contact Sales"', '"Bluetooth"'];
 
+const allCategories = [
+  "AI", "Business", "Collaboration", "Communication", "CRM",
+  "Developer Tools", "Education", "Entertainment", "Finance", "Food & Drink",
+  "Graphics & Design", "Health & Fitness", "Jobs & Recruitment", "Lifestyle",
+];
+
+// Items shown in the content area for each (non-Trending) sidebar tab.
+const TAB_ITEMS: Record<string, string[]> = {
+  Categories: allCategories,
+  Screens: trendingScreens,
+  "UI Elements": uiElements,
+  Flows: flows,
+};
+
 /* ── Small icon for recent pills ── */
 function RecentIcon({ type }: { type: string }) {
   if (type === "screens") return <ScreensIcon />;
@@ -258,14 +272,23 @@ function ResultGroup({
 interface SearchOverlayProps {
   open: boolean;
   onClose: () => void;
+  initialTab?: string;
 }
 
-export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
+export default function SearchOverlay({ open, onClose, initialTab = "Trending" }: SearchOverlayProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync the active sidebar tab to the requested tab each time the modal opens.
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
+
+  const tabItems = TAB_ITEMS[activeTab] ?? [];
 
   // Animation: mount/unmount with transition
   const [mounted, setMounted] = useState(false);
@@ -495,11 +518,12 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
               <section className="row-start-3 flex overflow-hidden pl-[20px]">
                 <aside className="hidden w-[240px] shrink-0 flex-col justify-between pb-[20px] pt-[8px] min-[720px]:flex">
                   <div className="flex flex-col gap-y-[1px]">
-                    {sidebarTabs.map((tab, i) => (
+                    {sidebarTabs.map((tab) => (
                       <button
                         key={tab.label}
+                        onClick={() => setActiveTab(tab.label)}
                         className={`flex items-center gap-x-[8px] rounded-[12px] px-[12px] py-[8px] text-[var(--foreground)] transition-colors ${
-                          i === 0
+                          activeTab === tab.label
                             ? "bg-[var(--fill)]"
                             : "hover:bg-[var(--fill)]"
                         }`}
@@ -515,6 +539,25 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
                 <div className="h-full grow overflow-y-auto pb-[40px] pl-[0px] pr-[0px] pt-[8px] min-[720px]:pl-[16px] min-[720px]:pr-[20px]">
                   <div className="flex flex-col gap-y-[24px] overflow-hidden">
+                    {activeTab !== "Trending" ? (
+                      <div className="flex flex-col gap-y-[12px]">
+                        <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">
+                          {activeTab}
+                        </h4>
+                        <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                          {tabItems.map((item) => (
+                            <button
+                              key={item}
+                              onClick={() => setQuery(item)}
+                              className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
                     <div className="flex gap-x-[8px] pr-[16px] min-[720px]:pr-[0px] overflow-x-auto scrollbar-none">
                       {trendingApps.map((app) => (
                         <button
@@ -588,6 +631,8 @@ export default function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         ))}
                       </div>
                     </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </section>

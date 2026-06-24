@@ -430,12 +430,17 @@ function SectionHeader({ name, small }: { name: string; small?: boolean }) {
 
 /* ── Flows ── */
 
-function FlowScreen({ variant, kind }: { variant: "ios" | "web"; kind: "video" | "empty" | "more" }) {
+const FLOW_WIDTH = {
+  ios: "w-[200px] min-[1024px]:w-[260px]",
+  web: "w-[320px] min-[1024px]:w-[420px]",
+};
+
+function FlowScreen({ variant, kind }: { variant: "ios" | "web"; kind: "video" | "empty" }) {
   const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
   const rounded = variant === "ios" ? "rounded-[20px]" : "rounded-[14px]";
   return (
     <div
-      className={`relative flex items-center justify-center overflow-hidden ${aspect} ${rounded} ${
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden ${FLOW_WIDTH[variant]} ${aspect} ${rounded} ${
         kind === "video" ? "bg-[var(--card-hover)]" : "bg-[var(--card)]"
       }`}
     >
@@ -451,14 +456,20 @@ function FlowScreen({ variant, kind }: { variant: "ios" | "web"; kind: "video" |
           </span>
         </>
       )}
-      {kind === "more" && (
-        <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[var(--fill)] text-[var(--foreground)]">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
     </div>
+  );
+}
+
+function FlowMoreButton() {
+  return (
+    <button
+      aria-label="See more"
+      className="absolute right-0 top-1/2 flex h-[40px] w-[40px] -translate-y-1/2 items-center justify-center rounded-full bg-[var(--fill)] text-[var(--foreground)] shadow-[0px_2px_8px_rgba(0,0,0,0.10)] transition-colors hover:bg-[var(--fill-hover)]"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M3 9H15M15 9L10 4M15 9L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }
 
@@ -479,18 +490,16 @@ function FlowLabel() {
 }
 
 function FlowCard({ variant }: { variant: "ios" | "web" }) {
-  const cols = variant === "ios" ? 6 : 3;
-  const gridCols = variant === "ios" ? "grid-cols-6" : "grid-cols-3";
+  const count = variant === "ios" ? 8 : 5;
   return (
     <div className="flex flex-col gap-y-[16px]">
-      <div className={`grid gap-x-[16px] ${gridCols}`}>
-        {Array.from({ length: cols }).map((_, i) => (
-          <FlowScreen
-            key={i}
-            variant={variant}
-            kind={i === 0 ? "video" : i === cols - 1 ? "more" : "empty"}
-          />
-        ))}
+      <div className="relative">
+        <div className="flex gap-x-[16px] overflow-x-auto scrollbar-none pr-[64px]">
+          {Array.from({ length: count }).map((_, i) => (
+            <FlowScreen key={i} variant={variant} kind={i === 0 ? "video" : "empty"} />
+          ))}
+        </div>
+        <FlowMoreButton />
       </div>
       <FlowLabel />
     </div>
@@ -510,8 +519,7 @@ function FlowSection({ name, variant }: { name: string; variant: "ios" | "web" }
 }
 
 function FlowSectionSkeleton({ variant }: { variant: "ios" | "web" }) {
-  const cols = variant === "ios" ? 6 : 3;
-  const gridCols = variant === "ios" ? "grid-cols-6" : "grid-cols-3";
+  const count = variant === "ios" ? 8 : 5;
   const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
   const rounded = variant === "ios" ? "rounded-[20px]" : "rounded-[14px]";
   return (
@@ -520,9 +528,12 @@ function FlowSectionSkeleton({ variant }: { variant: "ios" | "web" }) {
       <div className="flex flex-col gap-y-[32px]">
         {[0, 1].map((r) => (
           <div key={r} className="flex flex-col gap-y-[16px]">
-            <div className={`grid gap-x-[16px] ${gridCols}`}>
-              {Array.from({ length: cols }).map((_, i) => (
-                <div key={i} className={`${aspect} ${rounded} animate-pulse bg-[var(--card)]`} />
+            <div className="flex gap-x-[16px] overflow-hidden">
+              {Array.from({ length: count }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`shrink-0 ${FLOW_WIDTH[variant]} ${aspect} ${rounded} animate-pulse bg-[var(--card)]`}
+                />
               ))}
             </div>
             <div className="h-[16px] w-[160px] animate-pulse rounded-[4px] bg-[var(--card)]" />
