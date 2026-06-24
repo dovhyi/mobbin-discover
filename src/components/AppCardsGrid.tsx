@@ -407,7 +407,7 @@ function ScreenSection({ name, variant, href }: { name: string; variant: "ios" |
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className="group/section flex flex-col gap-y-[20px]">
-      <SectionHeader name={name} small href={href} />
+      <SectionHeader name={name} href={href} />
       <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
         {Array.from({ length: count }).map((_, i) => (
           <BareScreenCard key={i} variant={variant} />
