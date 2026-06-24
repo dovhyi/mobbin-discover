@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const msSaans = localFont({
+  src: [
+    {
+      path: "./fonts/MSaansVF.woff2",
+      weight: "100 900",
+      style: "normal",
+    },
+    {
+      path: "./fonts/MSaansVF.woff",
+      weight: "100 900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-ms-saans",
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -23,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} antialiased`}>{children}</body>
+      <body className={`${msSaans.variable} antialiased`}>{children}</body>
     </html>
   );
 }
