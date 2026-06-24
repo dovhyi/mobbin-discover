@@ -58,6 +58,23 @@ const sites: Site[] = [
   { name: "Autosend", description: "Email for developers and marketers", logoColor: "#6E56CF" },
 ];
 
+const CATEGORIES = [
+  "AI", "Business", "Collaboration", "Communication", "CRM",
+  "Developer Tools", "Education", "Entertainment", "Finance", "Food & Drink",
+  "Graphics & Design", "Health & Fitness", "Jobs & Recruitment", "Lifestyle",
+];
+
+const SCREEN_SECTIONS = [
+  "Verification", "Dashboard", "Onboarding", "Checkout", "Settings", "Profile",
+];
+
+const UI_ELEMENT_SECTIONS = [
+  "Buttons", "Inputs", "Cards", "Navigation", "Modals", "Tables",
+];
+
+// Same content for iOS and Web, rearranged so the two don't look identical.
+const reorderForWeb = (items: string[]) => [...items].reverse();
+
 /* ── Shared bits ── */
 
 function AppInfo({
@@ -97,6 +114,46 @@ function AppInfo({
   );
 }
 
+function SpinnerIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="var(--muted)" strokeWidth="3" strokeOpacity="0.25" />
+      <path d="M12 3a9 9 0 0 1 9 9" stroke="var(--muted)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PlaceholderInfo() {
+  return (
+    <section className="pointer-events-none flex w-full items-center gap-x-[8px]">
+      <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[30%] bg-[var(--surface)]">
+        <SpinnerIcon />
+      </div>
+      <div className="flex min-w-0 grow flex-col">
+        <h3 className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
+          App
+        </h3>
+        <p className="text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]">
+          Tagline
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function CompactLabel() {
+  return (
+    <div className="pointer-events-none flex items-center gap-x-[8px]">
+      <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-[28%] bg-[var(--surface)]">
+        <SpinnerIcon size={13} />
+      </div>
+      <span className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
+        App
+      </span>
+    </div>
+  );
+}
+
 function CornerBadge({ label, icon }: { label: string; icon?: boolean }) {
   return (
     <div className="pointer-events-none absolute left-[16px] top-[16px] flex items-center justify-center gap-x-[4px] rounded-[8px] bg-[rgba(115,115,115,0.56)] px-[8px] py-[4px] backdrop-blur-sm">
@@ -106,6 +163,32 @@ function CornerBadge({ label, icon }: { label: string; icon?: boolean }) {
         </svg>
       )}
       <span className="text-[12px] font-semibold leading-[16px] text-white">{label}</span>
+    </div>
+  );
+}
+
+/* ── Screenshot frames (placeholders) ── */
+
+function PhoneFrame() {
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-t-[28px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
+      <div className="flex items-center justify-between px-[14px] pt-[10px] text-[10px] font-semibold text-[var(--foreground)]">
+        <span>9:41</span>
+        <span className="inline-block h-[8px] w-[14px] rounded-[2px] border border-current opacity-70" />
+      </div>
+    </div>
+  );
+}
+
+function BrowserFrame() {
+  return (
+    <div className="relative w-[84%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
+      <div className="flex h-[20px] items-center gap-[4px] border-b border-[var(--border)] px-[10px]">
+        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
+        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
+        <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
+      </div>
+      <div className="aspect-[16/10] w-full" />
     </div>
   );
 }
@@ -145,15 +228,7 @@ function MobileCard({ app }: { app: MobileApp }) {
         href="#"
         className="relative flex aspect-[3/5] items-end justify-center overflow-hidden rounded-[28px] bg-[var(--card)] px-[14%] pt-[12%] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
-        {/* Phone screenshot placeholder */}
-        <div className="relative h-full w-full overflow-hidden rounded-t-[28px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
-          <div className="flex items-center justify-between px-[14px] pt-[10px] text-[10px] font-semibold text-[var(--foreground)]">
-            <span>9:41</span>
-            <span className="flex items-center gap-[3px]">
-              <span className="inline-block h-[8px] w-[14px] rounded-[2px] border border-current opacity-70" />
-            </span>
-          </div>
-        </div>
+        <PhoneFrame />
         <CornerBadge label={app.badge} />
       </a>
       <AppInfo name={app.name} description={app.description} logoColor={app.logoColor} />
@@ -168,17 +243,41 @@ function SiteCard({ site }: { site: Site }) {
         href="#"
         className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
-        {/* Browser screenshot placeholder (landscape) */}
-        <div className="relative w-[84%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
-          <div className="flex h-[20px] items-center gap-[4px] border-b border-[var(--border)] px-[10px]">
-            <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-            <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-            <span className="h-[6px] w-[6px] rounded-full bg-[var(--muted)] opacity-60" />
-          </div>
-          <div className="aspect-[16/10] w-full" />
-        </div>
+        <BrowserFrame />
       </a>
       <AppInfo name={site.name} description={site.description} logoColor={site.logoColor} />
+    </div>
+  );
+}
+
+function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
+  return (
+    <div className="flex flex-col gap-y-[16px]">
+      {variant === "ios" ? (
+        <div className="relative flex aspect-[3/5] items-end justify-center overflow-hidden rounded-[28px] bg-[var(--card)] px-[14%] pt-[12%]">
+          <PhoneFrame />
+        </div>
+      ) : (
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)]">
+          <BrowserFrame />
+        </div>
+      )}
+      <PlaceholderInfo />
+    </div>
+  );
+}
+
+// Bare screen (no chrome) — used by the Screens / UI Elements filters.
+function BareScreenCard({ variant }: { variant: "ios" | "web" }) {
+  const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
+  const rounded = variant === "ios" ? "rounded-[28px]" : "rounded-[16px]";
+  return (
+    <div className="group/cell flex flex-col gap-y-[12px]">
+      <a
+        href="#"
+        className={`block ${aspect} ${rounded} bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]`}
+      />
+      <CompactLabel />
     </div>
   );
 }
@@ -200,12 +299,90 @@ function SkeletonCard({ aspect }: { aspect: string }) {
   );
 }
 
+function BareSkeletonCard({ variant }: { variant: "ios" | "web" }) {
+  const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
+  const rounded = variant === "ios" ? "rounded-[28px]" : "rounded-[16px]";
+  return (
+    <div className="flex flex-col gap-y-[12px]">
+      <div className={`${aspect} ${rounded} animate-pulse bg-[var(--card)]`} />
+      <div className="flex items-center gap-x-[8px]">
+        <div className="h-[24px] w-[24px] shrink-0 animate-pulse rounded-[28%] bg-[var(--card)]" />
+        <div className="h-[14px] w-[40px] animate-pulse rounded-[4px] bg-[var(--card)]" />
+      </div>
+    </div>
+  );
+}
+
+/* ── Sections ── */
+
+function CategorySection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+  return (
+    <div className="flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
+      <h2 className="text-[20px] font-[652] leading-[28px] text-[var(--foreground)]">
+        {name}
+      </h2>
+      <div className="grid grid-cols-2 gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px]">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <PlaceholderCard key={i} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategorySectionSkeleton({ aspect }: { aspect: string }) {
+  return (
+    <div className="flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
+      <div className="h-[28px] w-[160px] animate-pulse rounded-[6px] bg-[var(--card)]" />
+      <div className="grid grid-cols-2 gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px]">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonCard key={i} aspect={aspect} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScreenSection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+  return (
+    <div className="flex flex-col gap-y-[20px]">
+      <h2 className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
+        {name}
+      </h2>
+      <div className="grid grid-cols-2 gap-x-[16px] gap-y-[28px] min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <BareScreenCard key={i} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScreenSectionSkeleton({ variant }: { variant: "ios" | "web" }) {
+  return (
+    <div className="flex flex-col gap-y-[20px]">
+      <div className="h-[24px] w-[140px] animate-pulse rounded-[6px] bg-[var(--card)]" />
+      <div className="grid grid-cols-2 gap-x-[16px] gap-y-[28px] min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <BareSkeletonCard key={i} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Grid ── */
 
 const wideGridStyle = {
   gridTemplateColumns:
     "repeat(auto-fill, minmax(max(300px, calc((100% - 2 * 16px) / 3)), 1fr))",
 };
+
+const PaginationDots = () => (
+  <div className="flex w-full items-center justify-center py-[24px]">
+    <Image src="/assets/pagination-dots.svg" alt="" width={34} height={7} />
+  </div>
+);
 
 export default function AppCardsGrid({
   experience,
@@ -226,6 +403,40 @@ export default function AppCardsGrid({
     const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, [experience, platform, filter, sort]);
+
+  const variant = platform === "iOS" ? "ios" : "web";
+
+  // Category-grouped sections (Apps + Categories filter).
+  if (experience === "Apps" && filter === "Categories") {
+    const aspect = variant === "ios" ? "aspect-[3/5]" : "aspect-square";
+    const cats = variant === "ios" ? CATEGORIES : reorderForWeb(CATEGORIES);
+    return (
+      <div className="pb-[24px]">
+        <div className="flex flex-col gap-y-[48px]">
+          {loading
+            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} aspect={aspect} />)
+            : cats.map((c) => <CategorySection key={c} name={c} variant={variant} />)}
+        </div>
+        <PaginationDots />
+      </div>
+    );
+  }
+
+  // Bare-screen sections (Apps + Screens / UI Elements filter).
+  if (experience === "Apps" && (filter === "Screens" || filter === "UI Elements")) {
+    const base = filter === "Screens" ? SCREEN_SECTIONS : UI_ELEMENT_SECTIONS;
+    const sections = variant === "ios" ? base : reorderForWeb(base);
+    return (
+      <div className="pb-[24px]">
+        <div className="flex flex-col gap-y-[48px]">
+          {loading
+            ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
+            : sections.map((s) => <ScreenSection key={s} name={s} variant={variant} />)}
+        </div>
+        <PaginationDots />
+      </div>
+    );
+  }
 
   const mode =
     experience === "Sites" ? "sites" : platform === "iOS" ? "ios" : "web";
@@ -253,10 +464,7 @@ export default function AppCardsGrid({
         </div>
       )}
 
-      {/* Pagination dots */}
-      <div className="flex w-full items-center justify-center py-[24px]">
-        <Image src="/assets/pagination-dots.svg" alt="" width={34} height={7} />
-      </div>
+      <PaginationDots />
     </div>
   );
 }
