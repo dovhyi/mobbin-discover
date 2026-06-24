@@ -96,6 +96,7 @@ export default function Home() {
         onClose={closeSearch}
         initialTab={searchTab}
         experience={experience}
+        platform={platform}
       />
       <main
         className="mx-auto flex w-full grow flex-col"

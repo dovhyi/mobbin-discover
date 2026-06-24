@@ -25,7 +25,7 @@ function MobileIcon() {
 
 function DesktopIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-[var(--foreground)]">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
       <path d="M19 15H10.9893C10.9451 15.7154 10.7494 16.4027 10.417 17H14V19H7V17C8.06342 17 8.86869 16.2309 8.98438 15H1V2H19V15ZM3 11H17V4H3V11Z" fill="currentColor" vectorEffect="non-scaling-stroke" />
     </svg>
   );
@@ -314,10 +314,22 @@ interface SearchOverlayProps {
   onClose: () => void;
   initialTab?: string;
   experience?: "Apps" | "Sites";
+  platform?: "iOS" | "Web";
+  initialQuery?: string;
 }
 
-export default function SearchOverlay({ open, onClose, initialTab = "Trending", experience = "Apps" }: SearchOverlayProps) {
+export default function SearchOverlay({
+  open,
+  onClose,
+  initialTab = "Trending",
+  experience = "Apps",
+  platform = "iOS",
+  initialQuery = "",
+}: SearchOverlayProps) {
   const sidebarTabs = experience === "Sites" ? sitesTabs : appsTabs;
+  const mobileActive = experience !== "Sites" && platform === "iOS";
+  const desktopActive = experience !== "Sites" && platform === "Web";
+  const sitesActive = experience === "Sites";
 
   const router = useRouter();
   const expSlug = experience === "Sites" ? "sites" : "apps";
@@ -349,6 +361,11 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
   useEffect(() => {
     if (open) setActiveTab(initialTab);
   }, [open, initialTab]);
+
+  // Pre-fill the search field with the current query when the modal opens.
+  useEffect(() => {
+    if (open) setQuery(initialQuery);
+  }, [open, initialQuery]);
 
   const tabItems = TAB_ITEMS[activeTab] ?? [];
 
@@ -542,13 +559,13 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
               )}
             </div>
             <div className="flex items-center gap-x-[16px] text-[var(--muted)]">
-              <button className="hidden transition-colors hover:text-[var(--foreground)] min-[720px]:block">
+              <button className={`hidden min-[720px]:block ${mobileActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
                 <MobileIcon />
               </button>
-              <button className="hidden text-[var(--foreground)] min-[720px]:block">
+              <button className={`hidden min-[720px]:block ${desktopActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
                 <DesktopIcon />
               </button>
-              <button className="hidden transition-colors hover:text-[var(--foreground)] min-[720px]:block">
+              <button className={`hidden min-[720px]:block ${sitesActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
                 <SitesIcon />
               </button>
               {/* Mobile cancel button */}

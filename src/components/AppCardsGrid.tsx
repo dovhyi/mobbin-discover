@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type Experience = "Apps" | "Sites";
@@ -87,6 +88,12 @@ const SITE_STYLE_TYPES = [
 
 // Same content for iOS and Web, rearranged so the two don't look identical.
 const reorderForWeb = (items: string[]) => [...items].reverse();
+
+// Link to the search results page with this section's filter applied.
+function searchHref(experience: Experience, dimension: string, value: string) {
+  const exp = experience === "Sites" ? "sites" : "apps";
+  return `/search?exp=${exp}&f=${encodeURIComponent(dimension)}:${encodeURIComponent(value)}`;
+}
 
 /* ── Shared bits ── */
 
@@ -338,11 +345,11 @@ const categoryGridCols = (variant: "ios" | "web") =>
     ? "grid-cols-2 min-[720px]:grid-cols-4"
     : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
 
-function CategorySection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+function CategorySection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
   const count = variant === "ios" ? 4 : 3;
   return (
     <div className="group/section flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
-      <SectionHeader name={name} />
+      <SectionHeader name={name} href={href} />
       <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] ${categoryGridCols(variant)}`}>
         {Array.from({ length: count }).map((_, i) => (
           <PlaceholderCard key={i} variant={variant} />
@@ -367,7 +374,7 @@ function CategorySectionSkeleton({ variant }: { variant: "ios" | "web" }) {
   );
 }
 
-function ScreenSection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+function ScreenSection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
   const count = variant === "ios" ? 5 : 3;
   const cols =
     variant === "ios"
@@ -375,7 +382,7 @@ function ScreenSection({ name, variant }: { name: string; variant: "ios" | "web"
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className="group/section flex flex-col gap-y-[20px]">
-      <SectionHeader name={name} small />
+      <SectionHeader name={name} small href={href} />
       <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
         {Array.from({ length: count }).map((_, i) => (
           <BareScreenCard key={i} variant={variant} />
@@ -419,9 +426,9 @@ function SectionArrow() {
   );
 }
 
-function SectionHeader({ name, small }: { name: string; small?: boolean }) {
-  return (
-    <div className="flex items-center gap-x-[8px]">
+function SectionHeader({ name, small, href }: { name: string; small?: boolean; href?: string }) {
+  const inner = (
+    <>
       <h2
         className={
           small
@@ -432,7 +439,14 @@ function SectionHeader({ name, small }: { name: string; small?: boolean }) {
         {name}
       </h2>
       <SectionArrow />
-    </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className="flex w-fit items-center gap-x-[8px]">
+      {inner}
+    </Link>
+  ) : (
+    <div className="flex items-center gap-x-[8px]">{inner}</div>
   );
 }
 
@@ -514,10 +528,10 @@ export function FlowCard({ variant }: { variant: "ios" | "web" }) {
   );
 }
 
-function FlowSection({ name, variant }: { name: string; variant: "ios" | "web" }) {
+function FlowSection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
   return (
     <div className="group/section flex flex-col gap-y-[24px]">
-      <SectionHeader name={name} />
+      <SectionHeader name={name} href={href} />
       <div className="flex flex-col gap-y-[32px]">
         <FlowCard variant={variant} />
         <FlowCard variant={variant} />
@@ -595,7 +609,9 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant={variant} />)
-            : cats.map((c) => <CategorySection key={c} name={c} variant={variant} />)}
+            : cats.map((c) => (
+                <CategorySection key={c} name={c} variant={variant} href={searchHref(experience, "Categories", c)} />
+              ))}
         </div>
         <PaginationDots />
       </div>
@@ -611,7 +627,9 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
-            : sections.map((s) => <ScreenSection key={s} name={s} variant={variant} />)}
+            : sections.map((s) => (
+                <ScreenSection key={s} name={s} variant={variant} href={searchHref(experience, filter, s)} />
+              ))}
         </div>
         <PaginationDots />
       </div>
@@ -626,7 +644,9 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <FlowSectionSkeleton key={s} variant={variant} />)
-            : types.map((t) => <FlowSection key={t} name={t} variant={variant} />)}
+            : types.map((t) => (
+                <FlowSection key={t} name={t} variant={variant} href={searchHref(experience, "Flows", t)} />
+              ))}
         </div>
         <PaginationDots />
       </div>
@@ -640,7 +660,9 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant="web" />)
-            : CATEGORIES.map((c) => <CategorySection key={c} name={c} variant="web" />)}
+            : CATEGORIES.map((c) => (
+                <CategorySection key={c} name={c} variant="web" href={searchHref(experience, "Categories", c)} />
+              ))}
         </div>
         <PaginationDots />
       </div>
@@ -655,7 +677,9 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant="web" />)
-            : base.map((s) => <ScreenSection key={s} name={s} variant="web" />)}
+            : base.map((s) => (
+                <ScreenSection key={s} name={s} variant="web" href={searchHref(experience, filter, s)} />
+              ))}
         </div>
         <PaginationDots />
       </div>

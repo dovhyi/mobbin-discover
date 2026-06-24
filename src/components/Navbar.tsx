@@ -5,7 +5,8 @@ import Link from "next/link";
 
 interface NavbarProps {
   onSearchClick?: () => void;
-  activePage?: "discover" | "for-you" | "community";
+  activePage?: "discover" | "for-you" | "community" | "none";
+  query?: string;
 }
 
 function BellIcon() {
@@ -16,7 +17,7 @@ function BellIcon() {
   );
 }
 
-export default function Navbar({ onSearchClick, activePage = "discover" }: NavbarProps) {
+export default function Navbar({ onSearchClick, activePage = "discover", query }: NavbarProps) {
   const linkClass = (page: string) =>
     `text-[16px] font-semibold leading-[22px] tracking-[0.2px] transition-colors ${
       activePage === page ? "text-[var(--foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -73,8 +74,8 @@ export default function Navbar({ onSearchClick, activePage = "discover" }: Navba
                     height={16}
                     className="asset-invert shrink-0 min-[1160px]:h-[20px] min-[1160px]:w-[20px]"
                   />
-                  <span className="truncate text-[16px] font-normal leading-[24px]">
-                    Search on Web...
+                  <span className={`truncate text-[16px] font-normal leading-[24px] ${query ? "text-[var(--foreground)]" : ""}`}>
+                    {query || "Search on Web..."}
                   </span>
                 </button>
               </div>

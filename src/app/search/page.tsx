@@ -109,11 +109,13 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <Navbar onSearchClick={openSearch} />
+      <Navbar onSearchClick={openSearch} activePage="none" query={query} />
       <SearchOverlay
         open={searchOpen}
         onClose={closeSearch}
         experience={experience === "sites" ? "Sites" : "Apps"}
+        platform={platform}
+        initialQuery={query}
       />
       <main
         className="mx-auto flex w-full flex-col"
