@@ -1,76 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import SegmentedToggle from "@/components/SegmentedToggle";
 
-const platformOptions = [
-  { id: "iOS", label: "iOS" },
-  { id: "Web", label: "Web" },
+type GroupKey = "experience" | "platform" | "filter" | "sort";
+
+const filterGroups: { key: GroupKey; title: string; items: string[] }[] = [
+  { key: "experience", title: "Experience", items: ["Apps", "Sites"] },
+  { key: "platform", title: "Platform", items: ["iOS", "Web"] },
+  {
+    key: "filter",
+    title: "Filter",
+    items: ["Trending", "Categories", "Screens", "UI Elements", "Flows"],
+  },
+  { key: "sort", title: "Sort", items: ["Latest", "Most popular", "Top Rated"] },
 ];
-const sortTabs = ["Latest", "Most popular", "Top rated", "Animations"];
 
 export default function TabsBar() {
-  const [activePlatform, setActivePlatform] = useState("Web");
-  const [activeSort, setActiveSort] = useState("Top rated");
+  const [selected, setSelected] = useState<Record<GroupKey, string>>({
+    experience: "Apps",
+    platform: "iOS",
+    filter: "Trending",
+    sort: "Latest",
+  });
 
   return (
-    <div className="flex items-center justify-between">
-      {/* Left side */}
-      <div
-        className="flex w-full items-center gap-x-[16px] min-[720px]:gap-x-[24px]"
-      >
-        {/* Platform toggle */}
-        <SegmentedToggle
-          options={platformOptions}
-          value={activePlatform}
-          onChange={setActivePlatform}
-        />
-
-        {/* Divider */}
-        <div className="h-[20px] w-px shrink-0 bg-[var(--border)]" />
-
-        {/* Sort tabs — scrollable container */}
-        <div className="scrollbar-none flex min-w-0 overflow-x-auto">
-          <div className="flex gap-x-[24px]">
-            {sortTabs.map((tab) => (
-              <a
-                key={tab}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveSort(tab);
-                }}
-                className={`whitespace-nowrap py-[4px] text-[16px] font-semibold leading-[24px] tracking-[0.144px] transition-colors ${
-                  activeSort === tab
-                    ? "border-b-2 border-[var(--foreground)] text-[var(--foreground)]"
-                    : "border-b-2 border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {tab}
-              </a>
-            ))}
-          </div>
+    <div className="grid grid-cols-2 gap-x-[24px] gap-y-[28px] min-[1024px]:grid-cols-4 min-[1024px]:gap-x-[40px]">
+      {filterGroups.map((group) => (
+        <div key={group.key} className="flex flex-col gap-y-[8px]">
+          <h3 className="text-[14px] font-[456] leading-[20px] tracking-[0.196px] text-[var(--muted-strong)]">
+            {group.title}
+          </h3>
+          <ul className="flex flex-col">
+            {group.items.map((item) => {
+              const active = selected[group.key] === item;
+              return (
+                <li key={item}>
+                  <button
+                    onClick={() =>
+                      setSelected((prev) => ({ ...prev, [group.key]: item }))
+                    }
+                    className={`text-left text-[24px] font-[652] leading-[30px] transition-colors duration-150 ${
+                      active
+                        ? "text-[var(--foreground)]"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
-
-      {/* Right side: Filter — hidden on small mobile */}
-      <div className="hidden min-[720px]:block">
-        <button className="flex h-[36px] shrink-0 items-center rounded-full px-[12px] transition-colors hover:bg-[var(--surface)]">
-          <div className="flex items-center justify-center gap-[8px]">
-            <Image
-              src="/assets/filter-icon.svg"
-              alt=""
-              width={20}
-              height={20}
-              className="asset-invert"
-            />
-            <span className="text-[14px] font-semibold leading-[20px] tracking-[0.144px] text-[var(--foreground)]">
-              Filter
-            </span>
-          </div>
-        </button>
-      </div>
+      ))}
     </div>
   );
 }
