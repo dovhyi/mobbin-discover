@@ -77,6 +77,14 @@ const FLOW_TYPES = [
   "Editing Profile", "Logging In", "Adding to Cart & Bag",
 ];
 
+const SITE_SECTION_TYPES = [
+  "Hero", "Features", "Pricing", "Testimonials", "FAQ", "Footer",
+];
+
+const SITE_STYLE_TYPES = [
+  "Minimal", "Bold", "Playful", "Brutalist", "Corporate", "Gradient",
+];
+
 // Same content for iOS and Web, rearranged so the two don't look identical.
 const reorderForWeb = (items: string[]) => [...items].reverse();
 
@@ -601,6 +609,35 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <FlowSectionSkeleton key={s} variant={variant} />)
             : types.map((t) => <FlowSection key={t} name={t} variant={variant} />)}
+        </div>
+        <PaginationDots />
+      </div>
+    );
+  }
+
+  // Sites — category-grouped sections with site cards.
+  if (experience === "Sites" && filter === "Categories") {
+    return (
+      <div className="pb-[24px]">
+        <div className="flex flex-col gap-y-[80px]">
+          {loading
+            ? [0, 1].map((s) => <CategorySectionSkeleton key={s} aspect="aspect-square" />)
+            : CATEGORIES.map((c) => <CategorySection key={c} name={c} variant="web" />)}
+        </div>
+        <PaginationDots />
+      </div>
+    );
+  }
+
+  // Sites — bare-screen sections for Sections / Styles.
+  if (experience === "Sites" && (filter === "Sections" || filter === "Styles")) {
+    const base = filter === "Sections" ? SITE_SECTION_TYPES : SITE_STYLE_TYPES;
+    return (
+      <div className="pb-[24px]">
+        <div className="flex flex-col gap-y-[80px]">
+          {loading
+            ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant="web" />)
+            : base.map((s) => <ScreenSection key={s} name={s} variant="web" />)}
         </div>
         <PaginationDots />
       </div>
