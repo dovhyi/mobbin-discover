@@ -19,9 +19,10 @@ interface AppCardsGridProps {
 interface WebApp {
   name: string;
   description: string;
-  screenImage: string;
-  logoImage: string;
-  rating: string;
+  screenImage?: string;
+  logoImage?: string;
+  rating?: string;
+  logoColor?: string;
 }
 
 const webApps: WebApp[] = [
@@ -31,6 +32,12 @@ const webApps: WebApp[] = [
   { name: "Visitors", description: "Realtime web analytics", screenImage: "/assets/visitors-screen.png", logoImage: "/assets/visitors-logo.png", rating: "4.81" },
   { name: "Kraken", description: "Buy and sell crypto securely", screenImage: "/assets/kraken-screen.png", logoImage: "/assets/kraken-logo.png", rating: "5.0" },
   { name: "Linktree", description: "Link in bio creator", screenImage: "/assets/linktree-screen.png", logoImage: "/assets/linktree-logo.png", rating: "5.0" },
+  { name: "Figma", description: "Design together, anywhere", logoColor: "#F24E1E" },
+  { name: "Loom", description: "Async video messaging", logoColor: "#625DF5" },
+  { name: "Webflow", description: "Build websites visually", logoColor: "#4353FF" },
+  { name: "Framer", description: "Design and ship sites", logoColor: "#0099FF" },
+  { name: "Retool", description: "Build internal tools fast", logoColor: "#3D3D3D" },
+  { name: "Productboard", description: "Product management system", logoColor: "#FF2638" },
 ];
 
 interface MobileApp {
@@ -45,6 +52,14 @@ const iosApps: MobileApp[] = [
   { name: "XChat", description: "Chat with anyone", badge: "New", logoColor: "#1A1A1A" },
   { name: "Granola", description: "AI meeting notes", badge: "New", logoColor: "#B7F03C" },
   { name: "GOAT", description: "Sneakers & apparel", badge: "Updated", logoColor: "#111111" },
+  { name: "Cash App", description: "Send, spend & invest", badge: "Updated", logoColor: "#00D54B" },
+  { name: "Duolingo", description: "Learn languages free", badge: "New", logoColor: "#58CC02" },
+  { name: "Robinhood", description: "Investing for everyone", badge: "Updated", logoColor: "#00C805" },
+  { name: "Strava", description: "Track runs & rides", badge: "New", logoColor: "#FC4C02" },
+  { name: "Headspace", description: "Meditation & sleep", badge: "Updated", logoColor: "#FF7E1D" },
+  { name: "Cleo", description: "AI money assistant", badge: "New", logoColor: "#5B2A86" },
+  { name: "Revolut", description: "Money without borders", badge: "Updated", logoColor: "#0D0D0D" },
+  { name: "Calm", description: "Sleep more, stress less", badge: "New", logoColor: "#2B5DB0" },
 ];
 
 interface Site {
@@ -57,6 +72,12 @@ const sites: Site[] = [
   { name: "Midday", description: "Run your business smarter", logoColor: "#111111" },
   { name: "Whop", description: "The future of work", logoColor: "#FF6243" },
   { name: "Autosend", description: "Email for developers and marketers", logoColor: "#6E56CF" },
+  { name: "Linear", description: "The system for product development", logoColor: "#5E6AD2" },
+  { name: "Vercel", description: "Build and deploy on the web", logoColor: "#111111" },
+  { name: "Raycast", description: "Supercharged productivity", logoColor: "#FF6363" },
+  { name: "Resend", description: "Email for developers", logoColor: "#111111" },
+  { name: "Clerk", description: "Authentication & user management", logoColor: "#6C47FF" },
+  { name: "Supabase", description: "The open source Firebase", logoColor: "#3ECF8E" },
 ];
 
 const CATEGORIES = [
@@ -228,20 +249,24 @@ function WebCard({ app }: { app: WebApp }) {
         className="relative block aspect-square overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
         <div className="flex size-full items-center justify-center">
-          <div className="relative w-[81.7%] overflow-hidden rounded-[10px]">
-            <Image
-              src={app.screenImage}
-              alt={`${app.name} screenshot`}
-              width={800}
-              height={500}
-              className="w-full object-cover"
-            />
-            <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
-          </div>
+          {app.screenImage ? (
+            <div className="relative w-[81.7%] overflow-hidden rounded-[10px]">
+              <Image
+                src={app.screenImage}
+                alt={`${app.name} screenshot`}
+                width={800}
+                height={500}
+                className="w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
+            </div>
+          ) : (
+            <div className="aspect-[16/10] w-[81.7%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
+          )}
         </div>
-        <CornerBadge label={app.rating} icon />
+        {app.rating && <CornerBadge label={app.rating} icon />}
       </a>
-      <AppInfo name={app.name} description={app.description} logoImage={app.logoImage} />
+      <AppInfo name={app.name} description={app.description} logoImage={app.logoImage} logoColor={app.logoColor} />
     </div>
   );
 }

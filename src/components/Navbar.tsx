@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
+const SEARCH_PLACEHOLDERS = ["Search iOS", "Search Web", "Search Sites"];
 
 interface NavbarProps {
   onSearchClick?: () => void;
@@ -18,6 +21,16 @@ function BellIcon() {
 }
 
 export default function Navbar({ onSearchClick, activePage = "discover", query }: NavbarProps) {
+  const [phIndex, setPhIndex] = useState(0);
+  useEffect(() => {
+    if (query) return;
+    const id = setInterval(
+      () => setPhIndex((i) => (i + 1) % SEARCH_PLACEHOLDERS.length),
+      2400,
+    );
+    return () => clearInterval(id);
+  }, [query]);
+
   const linkClass = (page: string) =>
     `text-[16px] font-semibold leading-[22px] tracking-[0.2px] transition-colors ${
       activePage === page ? "text-[var(--foreground)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"
@@ -74,8 +87,14 @@ export default function Navbar({ onSearchClick, activePage = "discover", query }
                     height={16}
                     className="asset-invert shrink-0 min-[1160px]:h-[20px] min-[1160px]:w-[20px]"
                   />
-                  <span className={`truncate text-[16px] font-normal leading-[24px] ${query ? "text-[var(--foreground)]" : ""}`}>
-                    {query || "Search on Web..."}
+                  <span className="truncate text-[16px] font-normal leading-[24px]">
+                    {query ? (
+                      <span className="text-[var(--foreground)]">{query}</span>
+                    ) : (
+                      <span key={phIndex} className="animate-placeholder inline-block">
+                        {SEARCH_PLACEHOLDERS[phIndex]}
+                      </span>
+                    )}
                   </span>
                 </button>
               </div>

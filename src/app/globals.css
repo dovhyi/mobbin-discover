@@ -106,3 +106,12 @@ button:active {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes placeholder-cycle {
+  0% { opacity: 0; transform: translateY(7px); }
+  12%, 86% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-7px); }
+}
+.animate-placeholder {
+  animation: placeholder-cycle 2400ms ease-in-out;
+}
