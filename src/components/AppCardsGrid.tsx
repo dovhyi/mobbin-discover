@@ -367,7 +367,7 @@ function BareSkeletonCard({ variant }: { variant: "ios" | "web" }) {
 
 const categoryGridCols = (variant: "ios" | "web") =>
   variant === "ios"
-    ? "grid-cols-2 min-[720px]:grid-cols-4"
+    ? "grid-cols-1 min-[720px]:grid-cols-4"
     : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
 
 function CategorySection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
@@ -717,7 +717,7 @@ export default function AppCardsGrid({
   return (
     <div className="pb-[24px]">
       {mode === "ios" ? (
-        <div className="grid grid-cols-2 content-start gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px] min-[720px]:gap-y-[48px]">
+        <div className="grid grid-cols-1 content-start gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px] min-[720px]:gap-y-[48px]">
           {loading
             ? iosApps.map((_, i) => <SkeletonCard key={i} aspect="aspect-[3/5]" />)
             : iosApps.map((app) => <MobileCard key={app.name} app={app} />)}

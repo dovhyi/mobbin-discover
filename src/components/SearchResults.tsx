@@ -163,24 +163,43 @@ function InjectionPanel({
 }) {
   return (
     <div className="rounded-[24px] border border-[var(--border)] p-[20px] min-[720px]:p-[24px]">
-      <div className="mb-[20px] flex items-center justify-between gap-x-[12px]">
-        <div className="flex items-center gap-x-[8px] text-[var(--muted-strong)]">
-          {icon}
-          <h3 className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{title}</h3>
-        </div>
-        {action && href && (
-          <Link
-            href={href}
-            className="flex shrink-0 items-center gap-x-[4px] text-[14px] font-semibold text-[var(--muted-strong)] transition-colors hover:text-[var(--foreground)]"
-          >
-            {action}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3 7h8M11 7L7.5 3.5M11 7L7.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        )}
+      <div className="mb-[20px] flex items-center gap-x-[8px] text-[var(--muted-strong)]">
+        {icon}
+        <h3 className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{title}</h3>
       </div>
       {children}
+      {action && href && (
+        <Link
+          href={href}
+          className="mt-[20px] flex h-[44px] w-full items-center justify-center gap-x-[6px] rounded-full border border-[var(--border-strong)] text-[14px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
+        >
+          {action}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 7h8M11 7L7.5 3.5M11 7L7.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// Single scrollable row on mobile, grid on >=720px.
+function Shelf({
+  gridCols,
+  itemWidth = "w-[78%]",
+  items,
+}: {
+  gridCols: string;
+  itemWidth?: string;
+  items: React.ReactNode[];
+}) {
+  return (
+    <div className={`scrollbar-none flex gap-[16px] overflow-x-auto min-[720px]:grid min-[720px]:overflow-visible ${gridCols}`}>
+      {items.map((node, i) => (
+        <div key={i} className={`${itemWidth} shrink-0 min-[720px]:w-auto`}>
+          {node}
+        </div>
+      ))}
     </div>
   );
 }
@@ -240,7 +259,7 @@ function ResultGrid({ type, variant, count }: { type: ResultType; variant: Varia
   }
   const cols =
     variant === "ios"
-      ? "grid-cols-2 min-[720px]:grid-cols-4"
+      ? "grid-cols-1 min-[720px]:grid-cols-4"
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[40px] ${cols}`}>
@@ -254,28 +273,24 @@ function ResultGrid({ type, variant, count }: { type: ResultType; variant: Varia
 function ReachPanelBody({ target }: { target: Lens }) {
   const v = LENS_VARIANT[target];
   // Aspect-flip shelf: portrait for iOS, landscape for web/sites.
-  const cols =
-    v === "ios"
-      ? "grid-cols-2 min-[720px]:grid-cols-4"
-      : "grid-cols-1 min-[640px]:grid-cols-3";
   const count = v === "ios" ? 4 : 3;
   return (
-    <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] ${cols}`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <PlaceholderCard key={i} variant={v} />
-      ))}
-    </div>
+    <Shelf
+      gridCols={v === "ios" ? "min-[720px]:grid-cols-4" : "min-[720px]:grid-cols-3"}
+      itemWidth={v === "ios" ? "w-[44%]" : "w-[82%]"}
+      items={Array.from({ length: count }).map((_, i) => <PlaceholderCard key={i} variant={v} />)}
+    />
   );
 }
 
 function DepthPanelBody({ block, variant }: { block: DepthBlock; variant: Variant }) {
   if (block.variant === "similar") {
     return (
-      <div className="grid grid-cols-1 gap-[16px] min-[720px]:grid-cols-3">
-        {SIMILAR.map((c) => (
-          <WebMiniCard key={c.title} title={c.title} desc={c.desc} />
-        ))}
-      </div>
+      <Shelf
+        gridCols="min-[720px]:grid-cols-3"
+        itemWidth="w-[82%]"
+        items={SIMILAR.map((c) => <WebMiniCard key={c.title} title={c.title} desc={c.desc} />)}
+      />
     );
   }
   if (block.cardKind === "flow") {
@@ -283,21 +298,22 @@ function DepthPanelBody({ block, variant }: { block: DepthBlock; variant: Varian
   }
   if (block.cardKind === "web") {
     return (
-      <div className="grid grid-cols-1 gap-[16px] min-[720px]:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <PlaceholderCard key={i} variant="web" />
-        ))}
-      </div>
+      <Shelf
+        gridCols="min-[720px]:grid-cols-3"
+        itemWidth="w-[82%]"
+        items={Array.from({ length: 3 }).map((_, i) => <PlaceholderCard key={i} variant="web" />)}
+      />
     );
   }
   // screens
-  const cols = variant === "ios" ? "grid-cols-2 min-[720px]:grid-cols-5" : "grid-cols-2 min-[720px]:grid-cols-3";
   return (
-    <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
-      {Array.from({ length: variant === "ios" ? 5 : 3 }).map((_, i) => (
+    <Shelf
+      gridCols={variant === "ios" ? "min-[720px]:grid-cols-5" : "min-[720px]:grid-cols-3"}
+      itemWidth={variant === "ios" ? "w-[40%]" : "w-[82%]"}
+      items={Array.from({ length: variant === "ios" ? 5 : 3 }).map((_, i) => (
         <BareScreenCard key={i} variant={variant} />
       ))}
-    </div>
+    />
   );
 }
 
