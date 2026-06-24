@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import searchData from "@/data/searchResults.json";
 
 /* ── Icon helpers (inline SVGs from mobbin.com) ── */
@@ -317,6 +318,26 @@ interface SearchOverlayProps {
 
 export default function SearchOverlay({ open, onClose, initialTab = "Trending", experience = "Apps" }: SearchOverlayProps) {
   const sidebarTabs = experience === "Sites" ? sitesTabs : appsTabs;
+
+  const router = useRouter();
+  const expSlug = experience === "Sites" ? "sites" : "apps";
+  const navigate = useCallback(
+    (params: Record<string, string>) => {
+      onClose();
+      router.push(`/search?${new URLSearchParams(params).toString()}`);
+    },
+    [onClose, router],
+  );
+  const goQuery = useCallback(
+    (q: string) => {
+      if (q.trim()) navigate({ q: q.trim(), exp: expSlug });
+    },
+    [navigate, expSlug],
+  );
+  const goFilter = useCallback(
+    (dim: string, value: string) => navigate({ exp: expSlug, f: `${dim}:${value}` }),
+    [navigate, expSlug],
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -502,6 +523,12 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                 spellCheck={false}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    goQuery(query);
+                  }
+                }}
               />
               {hasQuery && (
                 <button
@@ -542,7 +569,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                 {recentSearches.map((item) => (
                   <button
                     key={item.label}
-                    onClick={() => setQuery(item.label)}
+                    onClick={() => goQuery(item.label)}
                     className="group flex shrink-0 items-center gap-x-[8px] rounded-full bg-[var(--fill)] px-[12px] py-[8px] transition-colors hover:bg-[var(--fill-hover)]"
                   >
                     <div className="size-[20px] shrink-0 text-[var(--foreground)]">
@@ -589,7 +616,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                           {tabItems.map((item) => (
                             <button
                               key={item}
-                              onClick={() => setQuery(item)}
+                              onClick={() => goFilter(activeTab, item)}
                               className="flex items-center justify-between gap-x-[12px] rounded-[12px] px-[12px] py-[10px] text-left transition-colors hover:bg-[var(--fill)]"
                             >
                               <span className="truncate text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">
@@ -608,6 +635,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                       {trendingApps.map((app) => (
                         <button
                           key={app.name}
+                          onClick={() => goQuery(app.name)}
                           className="group flex w-[64px] shrink-0 cursor-pointer flex-col items-center gap-y-[4px]"
                         >
                           <div
@@ -627,6 +655,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                         {trendingScreens.map((screen) => (
                           <button
                             key={screen}
+                            onClick={() => goFilter("Screens", screen)}
                             className="relative flex aspect-square cursor-pointer items-start overflow-hidden rounded-[16px] bg-[var(--fill)] p-[12px] text-left text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {screen}
@@ -641,6 +670,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                         {uiElements.map((el) => (
                           <button
                             key={el}
+                            onClick={() => goFilter("UI Elements", el)}
                             className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {el}
@@ -655,6 +685,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                         {flows.map((flow) => (
                           <button
                             key={flow}
+                            onClick={() => goFilter("Flows", flow)}
                             className="flex aspect-square cursor-pointer flex-col justify-between overflow-hidden rounded-[16px] bg-[var(--fill)] p-[12px] text-left transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             <span className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{flow}</span>
@@ -670,6 +701,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
                         {textInScreenshot.map((text) => (
                           <button
                             key={text}
+                            onClick={() => goQuery(text)}
                             className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]"
                           >
                             {text}
@@ -691,7 +723,7 @@ export default function SearchOverlay({ open, onClose, initialTab = "Trending", 
               <div className="h-full overflow-y-auto px-[20px] pb-[20px] pt-[8px]">
                 <div className="flex flex-col gap-y-[12px]">
                   {/* Free text search row (index 0) */}
-                  <div>
+                  <div onClick={() => goQuery(query)}>
                     <ResultRow
                       item={{ type: "search", name: query }}
                       selected={selectedIndex === 0}
