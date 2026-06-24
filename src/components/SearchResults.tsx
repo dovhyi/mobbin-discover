@@ -162,7 +162,7 @@ function InjectionPanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-[20px] min-[720px]:p-[24px]">
+    <div className="rounded-[24px] border border-[var(--border)] p-[20px] min-[720px]:p-[24px]">
       <div className="mb-[20px] flex items-center justify-between gap-x-[12px]">
         <div className="flex items-center gap-x-[8px] text-[var(--muted-strong)]">
           {icon}
