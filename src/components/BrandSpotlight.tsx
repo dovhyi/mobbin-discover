@@ -108,7 +108,7 @@ export function BrandBanner({ brand }: { brand: Brand }) {
 export function BrandCard({ brand }: { brand: Brand }) {
   return (
     <div
-      className="theme-dark flex flex-col gap-[24px] overflow-hidden rounded-[24px] p-[24px]"
+      className="theme-dark flex min-w-0 flex-col gap-[24px] self-start overflow-hidden rounded-[24px] p-[24px]"
       style={bg(brand.color)}
     >
       {/* Header */}
@@ -145,7 +145,7 @@ export function BrandCard({ brand }: { brand: Brand }) {
       </div>
 
       {/* Screenshot strip (bleeds to the right edge, scrolls) */}
-      <div className="scrollbar-none -mr-[24px] flex gap-[12px] overflow-x-auto pr-[24px]">
+      <div className="scrollbar-none -mr-[24px] flex min-w-0 gap-[12px] overflow-x-auto pr-[24px]">
         {brand.screens.map((src, i) => (
           <div
             key={i}
