@@ -120,6 +120,7 @@ function SearchPageInner() {
         experience={experience === "sites" ? "Sites" : "Apps"}
         platform={platform}
         initialQuery={query}
+        initialFilters={filters}
       />
       <main
         className="mx-auto flex w-full flex-col"

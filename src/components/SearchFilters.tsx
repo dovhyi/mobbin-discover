@@ -379,6 +379,38 @@ interface SearchFiltersProps {
   onSortChange: (s: string) => void;
   count: number;
   countNoun: string;
+  dimensionsOnly?: boolean;
+}
+
+function DimensionChips({
+  experience,
+  filters,
+  onToggleFilter,
+  onClearDim,
+  onReset,
+}: Pick<SearchFiltersProps, "experience" | "filters" | "onToggleFilter" | "onClearDim" | "onReset">) {
+  const hasActive = Object.values(filters).some((v) => v.length > 0);
+  return (
+    <div className="scrollbar-none flex items-center gap-x-[10px] overflow-x-auto">
+      {visibleDimensions(experience, filters).map((dim) => (
+        <DimensionChip
+          key={dim}
+          experience={experience}
+          dimension={dim}
+          selected={filters[dim] ?? []}
+          onToggle={(value) => onToggleFilter(dim, value)}
+          onClear={() => onClearDim(dim)}
+        />
+      ))}
+      {hasActive && (
+        <IconButton label="Reset filters" onClick={onReset}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 9a6 6 0 1 0 1.8-4.3M3 3v2.7h2.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </IconButton>
+      )}
+    </div>
+  );
 }
 
 export default function SearchFilters({
@@ -394,7 +426,20 @@ export default function SearchFilters({
   onSortChange,
   count,
   countNoun,
+  dimensionsOnly = false,
 }: SearchFiltersProps) {
+  if (dimensionsOnly) {
+    return (
+      <DimensionChips
+        experience={experience}
+        filters={filters}
+        onToggleFilter={onToggleFilter}
+        onClearDim={onClearDim}
+        onReset={onReset}
+      />
+    );
+  }
+
   const hasActive = Object.values(filters).some((v) => v.length > 0);
 
   return (

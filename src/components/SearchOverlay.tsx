@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import searchData from "@/data/searchResults.json";
-import { DIMENSIONS, FILTER_DATA } from "@/lib/search";
+import SearchFilters from "@/components/SearchFilters";
+import { DIMENSIONS, FILTER_DATA, type Filters } from "@/lib/search";
 
 /* ── Icon helpers (inline SVGs from mobbin.com) ── */
 
@@ -289,6 +290,12 @@ function DimIcon({ dim }: { dim: string }) {
   return <SearchIcon />;
 }
 
+function encodeF(f: Filters) {
+  return Object.entries(f)
+    .flatMap(([d, vs]) => vs.map((v) => `${d}:${v}`))
+    .join("~");
+}
+
 // Pull known filter values (and synonym matches) out of a free-text query.
 // Tracks how many distinct source terms matched so a single concept can be
 // shown as direct match rows while a multi-concept query collapses to one
@@ -460,7 +467,10 @@ interface SearchOverlayProps {
   experience?: "Apps" | "Sites";
   platform?: "iOS" | "Web";
   initialQuery?: string;
+  initialFilters?: Filters;
 }
+
+const EMPTY_FILTERS: Filters = {};
 
 export default function SearchOverlay({
   open,
@@ -469,9 +479,13 @@ export default function SearchOverlay({
   experience = "Apps",
   platform = "iOS",
   initialQuery = "",
+  initialFilters = EMPTY_FILTERS,
 }: SearchOverlayProps) {
   const [selExp, setSelExp] = useState<"Apps" | "Sites">(experience);
   const [selPlatform, setSelPlatform] = useState<"iOS" | "Web">(platform);
+  // Editing an existing search: preserve the page's filters while refining.
+  const [editing, setEditing] = useState(false);
+  const [editFilters, setEditFilters] = useState<Filters>(initialFilters);
 
   const sidebarTabs = selExp === "Sites" ? sitesTabs : appsTabs;
   const mobileActive = selExp !== "Sites" && selPlatform === "iOS";
@@ -498,11 +512,15 @@ export default function SearchOverlay({
   );
   const goFilter = useCallback(
     (dim: string, value: string) => {
-      const params: Record<string, string> = { exp: expSlug, f: `${dim}:${value}` };
+      const params: Record<string, string> = { exp: expSlug };
       if (selExp !== "Sites") params.platform = selPlatform;
+      const base: Filters = { ...editFilters };
+      base[dim] = Array.from(new Set([...(base[dim] || []), value]));
+      const f = encodeF(base);
+      if (f) params.f = f;
       navigate(params);
     },
-    [navigate, expSlug, selExp, selPlatform],
+    [navigate, expSlug, selExp, selPlatform, editFilters],
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -612,19 +630,58 @@ export default function SearchOverlay({
   const extractSummary = Object.values(extracted.filters).flat().join(" · ");
 
   const runSearch = useCallback(() => {
+    const params: Record<string, string> = { exp: expSlug };
+    if (selExp !== "Sites") params.platform = selPlatform;
+    // Start from the filters being edited so they're preserved when refining.
+    const base: Filters = { ...editFilters };
     if (mode === "extract" && Object.keys(extracted.filters).length) {
-      const params: Record<string, string> = { exp: expSlug };
-      if (selExp !== "Sites") params.platform = selPlatform;
-      const f = Object.entries(extracted.filters)
-        .flatMap(([d, vs]) => vs.map((v) => `${d}:${v}`))
-        .join("~");
-      if (f) params.f = f;
+      Object.entries(extracted.filters).forEach(([d, vs]) => {
+        base[d] = Array.from(new Set([...(base[d] || []), ...vs]));
+      });
       if (extracted.valuable && extracted.leftover) params.q = extracted.leftover;
-      navigate(params);
-    } else {
-      goQuery(query);
+    } else if (query.trim()) {
+      params.q = query.trim();
     }
-  }, [mode, extracted, expSlug, selExp, selPlatform, navigate, goQuery, query]);
+    const f = encodeF(base);
+    if (f) params.f = f;
+    navigate(params);
+  }, [mode, extracted, expSlug, selExp, selPlatform, navigate, query, editFilters]);
+
+  // Begin editing (back arrow / Esc returns to the default modal view).
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      wasOpen.current = true;
+      setEditing(initialQuery.trim().length > 0 || Object.keys(initialFilters).length > 0);
+      setEditFilters(initialFilters);
+    } else if (!open) {
+      wasOpen.current = false;
+    }
+  }, [open, initialQuery, initialFilters]);
+
+  const toggleEditFilter = useCallback((dim: string, value: string) => {
+    setEditFilters((prev) => {
+      const cur = prev[dim] ?? [];
+      const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
+      const copy = { ...prev };
+      if (next.length) copy[dim] = next;
+      else delete copy[dim];
+      return copy;
+    });
+  }, []);
+  const clearEditDim = useCallback((dim: string) => {
+    setEditFilters((prev) => {
+      const copy = { ...prev };
+      delete copy[dim];
+      return copy;
+    });
+  }, []);
+  const resetEditFilters = useCallback(() => setEditFilters({}), []);
+  const exitEditing = useCallback(() => {
+    setEditing(false);
+    setEditFilters({});
+    setQuery("");
+  }, []);
 
   // Animation: mount/unmount with transition
   const [mounted, setMounted] = useState(false);
@@ -738,7 +795,8 @@ export default function SearchOverlay({
       if (!open) return;
 
       if (e.key === "Escape") {
-        onClose();
+        if (editing) exitEditing();
+        else onClose();
         return;
       }
 
@@ -785,7 +843,7 @@ export default function SearchOverlay({
         }
       }
     },
-    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter],
+    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, editing, exitEditing],
   );
 
   useEffect(() => {
@@ -817,7 +875,19 @@ export default function SearchOverlay({
           }`}
         >
           {/* ── Search input section ── */}
-          <section className="flex gap-x-[12px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
+          <section className="flex flex-col gap-y-[14px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
+            <div className="flex gap-x-[12px]">
+            {editing && (
+              <button
+                onClick={exitEditing}
+                aria-label="Back"
+                className="flex size-[32px] shrink-0 items-center justify-center rounded-full text-[var(--muted-strong)] transition-colors hover:text-[var(--foreground)]"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
             <div className="flex grow items-center gap-x-[8px]">
               <input
                 ref={inputRef}
@@ -875,6 +945,24 @@ export default function SearchOverlay({
                 Cancel
               </button>
             </div>
+            </div>
+            {editing && (
+              <SearchFilters
+                dimensionsOnly
+                experience={selExp === "Sites" ? "sites" : "apps"}
+                onExperienceChange={() => {}}
+                platform={selPlatform}
+                onPlatformChange={() => {}}
+                filters={editFilters}
+                onToggleFilter={toggleEditFilter}
+                onClearDim={clearEditDim}
+                onReset={resetEditFilters}
+                sort="Trending"
+                onSortChange={() => {}}
+                count={0}
+                countNoun=""
+              />
+            )}
           </section>
 
           {/* ── When no query: Recent searches + Trending content ── */}
