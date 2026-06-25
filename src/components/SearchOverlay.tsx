@@ -209,6 +209,20 @@ const SITE_TAB_ITEMS: Record<string, string[]> = {
   Styles: stylesList,
 };
 
+// Sites "Trending" tab content.
+const trendingSites = [
+  { name: "Midday", color: "#C2F04C" },
+  { name: "Vercel", color: "#111111" },
+  { name: "Raycast", color: "#C2502E" },
+  { name: "Shopify", color: "#5E8E3E" },
+  { name: "Framer", color: "#4D3DF7" },
+  { name: "Cash App", color: "#00D54B" },
+  { name: "Whop", color: "#1A1A1A" },
+];
+const trendingSiteCategories = ["Business", "Technology", "Shopping", "Portfolio"];
+const trendingSiteSections = ["Hero", "Pricing", "Features", "404", "Social Proof", "Footer", "About", "Showcase", "Navigation"];
+const trendingSiteStyles = ["Colorful", "Dark", "Minimal", "Illustration", "Motion", "Photography", "Scroll Effects"];
+
 // Deterministic per-item count so the list looks populated without real data.
 function countFor(label: string): number {
   let h = 0;
@@ -409,6 +423,48 @@ export default function SearchOverlay({
 
   const tabItems = (selExp === "Sites" ? SITE_TAB_ITEMS[activeTab] : TAB_ITEMS[activeTab]) ?? [];
 
+  // Keyboard navigation within the tab content list.
+  const [contentIndex, setContentIndex] = useState(0);
+  const contentRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  useEffect(() => {
+    setContentIndex(0);
+  }, [activeTab, selExp, query]);
+  useEffect(() => {
+    contentRefs.current.get(contentIndex)?.scrollIntoView({ block: "nearest" });
+  }, [contentIndex]);
+
+  // Reveal shortcut tooltips while Option (Alt) is held for ~0.5s.
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      setShowShortcuts(false);
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clear = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+      setShowShortcuts(false);
+    };
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "Alt" && !timer) timer = setTimeout(() => setShowShortcuts(true), 500);
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key === "Alt") clear();
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", clear);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", clear);
+    };
+  }, [open]);
+
   // Animation: mount/unmount with transition
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -525,17 +581,50 @@ export default function SearchOverlay({
         return;
       }
 
-      if (!hasQuery) return;
+      // Option+1/2/3 → switch lens (use e.code; Option mangles e.key on macOS).
+      if (e.altKey && (e.code === "Digit1" || e.code === "Digit2" || e.code === "Digit3")) {
+        e.preventDefault();
+        if (e.code === "Digit1") selectLens("Apps", "iOS");
+        else if (e.code === "Digit2") selectLens("Apps", "Web");
+        else selectLens("Sites");
+        return;
+      }
 
-      if (e.key === "ArrowDown") {
+      // Query results: arrow through the result rows.
+      if (hasQuery) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev + 1) % totalItems);
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
+        }
+        return;
+      }
+
+      // Empty state: Tab cycles sidebar tabs; arrows navigate the tab content.
+      if (e.key === "Tab") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % totalItems);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
+        const idx = sidebarTabs.findIndex((t) => t.label === activeTab);
+        const delta = e.shiftKey ? -1 : 1;
+        const next = (idx + delta + sidebarTabs.length) % sidebarTabs.length;
+        setActiveTab(sidebarTabs[next].label);
+        return;
+      }
+      if (activeTab !== "Trending") {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setContentIndex((p) => (tabItems.length ? (p + 1) % tabItems.length : 0));
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setContentIndex((p) => (tabItems.length ? (p - 1 + tabItems.length) % tabItems.length : 0));
+        } else if (e.key === "Enter" && tabItems[contentIndex]) {
+          e.preventDefault();
+          goFilter(activeTab, tabItems[contentIndex]);
+        }
       }
     },
-    [open, onClose, hasQuery, totalItems],
+    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter],
   );
 
   useEffect(() => {
@@ -598,7 +687,7 @@ export default function SearchOverlay({
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-x-[16px] text-[var(--muted)]">
+            <div className="relative flex items-center gap-x-[16px] text-[var(--muted)]">
               <button
                 onClick={() => selectLens("Apps", "iOS")}
                 className={`hidden min-[720px]:block ${mobileActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}
@@ -617,6 +706,25 @@ export default function SearchOverlay({
               >
                 <SitesIcon />
               </button>
+
+              {showShortcuts && (
+                <div className="pointer-events-none absolute right-0 top-[calc(100%+10px)] z-30 hidden flex-col items-end gap-y-[6px] min-[720px]:flex">
+                  {([["iOS", "1"], ["Web", "2"], ["Sites", "3"]] as const).map(([label, num]) => (
+                    <div
+                      key={num}
+                      className="flex items-center gap-x-[8px] rounded-[8px] bg-[var(--overlay)] py-[4px] pl-[8px] pr-[4px] shadow-[0px_12px_30px_rgba(0,0,0,0.5)] backdrop-blur-[24px]"
+                    >
+                      <span className="whitespace-nowrap text-[12px] font-medium leading-[16px] tracking-[0.2px] text-[var(--foreground)]">
+                        Filter by {label}
+                      </span>
+                      <span className="flex items-center gap-x-[2px]">
+                        <kbd className="flex h-[20px] w-[20px] items-center justify-center rounded-[4px] bg-[var(--surface-hover)] text-[11px] font-medium text-[var(--muted-strong)]">⌥</kbd>
+                        <kbd className="flex h-[20px] w-[20px] items-center justify-center rounded-[4px] bg-[var(--surface-hover)] text-[11px] font-medium text-[var(--muted-strong)]">{num}</kbd>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {/* Mobile cancel button */}
               <button
                 onClick={onClose}
@@ -679,11 +787,17 @@ export default function SearchOverlay({
                           {activeTab}
                         </h4>
                         <div className="flex flex-col pr-[16px] min-[720px]:pr-[0px]">
-                          {tabItems.map((item) => (
+                          {tabItems.map((item, i) => (
                             <button
                               key={item}
+                              ref={(el) => {
+                                if (el) contentRefs.current.set(i, el);
+                                else contentRefs.current.delete(i);
+                              }}
                               onClick={() => goFilter(activeTab, item)}
-                              className="flex items-center justify-between gap-x-[12px] rounded-[12px] px-[12px] py-[10px] text-left transition-colors hover:bg-[var(--fill)]"
+                              className={`flex items-center justify-between gap-x-[12px] rounded-[12px] px-[12px] py-[10px] text-left transition-colors ${
+                                i === contentIndex ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
+                              }`}
                             >
                               <span className="truncate text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">
                                 {item}
@@ -695,6 +809,58 @@ export default function SearchOverlay({
                           ))}
                         </div>
                       </div>
+                    ) : selExp === "Sites" ? (
+                      <>
+                        <div className="flex gap-x-[8px] overflow-x-auto pr-[16px] scrollbar-none min-[720px]:pr-[0px]">
+                          {trendingSites.map((site) => (
+                            <button
+                              key={site.name}
+                              onClick={() => goQuery(site.name)}
+                              className="size-[64px] shrink-0 rounded-[18px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]"
+                              style={{ backgroundColor: site.color }}
+                              aria-label={site.name}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="flex flex-col gap-y-[12px]">
+                          <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Categories</h4>
+                          <div className="grid grid-cols-2 gap-[8px] pr-[16px] min-[720px]:grid-cols-4 min-[720px]:pr-[0px]">
+                            {trendingSiteCategories.map((c) => (
+                              <button
+                                key={c}
+                                onClick={() => goFilter("Categories", c)}
+                                className="relative flex aspect-[4/5] flex-col overflow-hidden rounded-[16px] bg-[var(--fill)] p-[12px] text-left transition-colors hover:bg-[var(--fill-hover)]"
+                              >
+                                <span className="relative z-10 text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{c}</span>
+                                <div className="absolute inset-x-[12px] bottom-0 top-[48px] overflow-hidden rounded-t-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-y-[12px]">
+                          <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Sections</h4>
+                          <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                            {trendingSiteSections.map((s) => (
+                              <button key={s} onClick={() => goFilter("Sections", s)} className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]">
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-y-[12px]">
+                          <h4 className="text-[14px] font-semibold leading-[20px] text-[var(--muted-strong)]">Styles</h4>
+                          <div className="flex flex-wrap gap-[8px] pr-[16px] min-[720px]:pr-[0px]">
+                            {trendingSiteStyles.map((s) => (
+                              <button key={s} onClick={() => goFilter("Styles", s)} className="cursor-pointer rounded-full bg-[var(--fill)] px-[16px] py-[8px] text-[16px] font-semibold leading-[24px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill-hover)]">
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
                     ) : (
                       <>
                     <div className="flex gap-x-[8px] pr-[16px] min-[720px]:pr-[0px] overflow-x-auto scrollbar-none">

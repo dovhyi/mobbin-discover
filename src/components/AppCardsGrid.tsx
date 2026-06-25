@@ -110,10 +110,17 @@ const SITE_STYLE_TYPES = [
 // Same content for iOS and Web, rearranged so the two don't look identical.
 const reorderForWeb = (items: string[]) => [...items].reverse();
 
-// Link to the search results page with this section's filter applied.
-function searchHref(experience: Experience, dimension: string, value: string) {
-  const exp = experience === "Sites" ? "sites" : "apps";
-  return `/search?exp=${exp}&f=${encodeURIComponent(dimension)}:${encodeURIComponent(value)}`;
+// Link to the search results page with this section's filter (and lens) applied.
+function searchHref(experience: Experience, platform: Platform, dimension: string, value: string) {
+  const params = new URLSearchParams();
+  if (experience === "Sites") {
+    params.set("exp", "sites");
+  } else {
+    params.set("exp", "apps");
+    params.set("platform", platform);
+  }
+  params.set("f", `${dimension}:${value}`);
+  return `/search?${params.toString()}`;
 }
 
 /* ── Shared bits ── */
@@ -630,7 +637,7 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant={variant} />)
             : cats.map((c) => (
-                <CategorySection key={c} name={c} variant={variant} href={searchHref(experience, "Categories", c)} />
+                <CategorySection key={c} name={c} variant={variant} href={searchHref(experience, platform, "Categories", c)} />
               ))}
         </div>
         <PaginationDots />
@@ -648,7 +655,7 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
             : sections.map((s) => (
-                <ScreenSection key={s} name={s} variant={variant} href={searchHref(experience, filter, s)} />
+                <ScreenSection key={s} name={s} variant={variant} href={searchHref(experience, platform, filter, s)} />
               ))}
         </div>
         <PaginationDots />
@@ -665,7 +672,7 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <FlowSectionSkeleton key={s} variant={variant} />)
             : types.map((t) => (
-                <FlowSection key={t} name={t} variant={variant} href={searchHref(experience, "Flows", t)} />
+                <FlowSection key={t} name={t} variant={variant} href={searchHref(experience, platform, "Flows", t)} />
               ))}
         </div>
         <PaginationDots />
@@ -681,7 +688,7 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant="web" />)
             : CATEGORIES.map((c) => (
-                <CategorySection key={c} name={c} variant="web" href={searchHref(experience, "Categories", c)} />
+                <CategorySection key={c} name={c} variant="web" href={searchHref(experience, platform, "Categories", c)} />
               ))}
         </div>
         <PaginationDots />
@@ -698,7 +705,7 @@ export default function AppCardsGrid({
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant="web" />)
             : base.map((s) => (
-                <ScreenSection key={s} name={s} variant="web" href={searchHref(experience, filter, s)} />
+                <ScreenSection key={s} name={s} variant="web" href={searchHref(experience, platform, filter, s)} />
               ))}
         </div>
         <PaginationDots />

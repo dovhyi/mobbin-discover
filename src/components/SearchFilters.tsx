@@ -86,7 +86,7 @@ function Dropdown({
     <div
       ref={menuRef}
       style={{ position: "fixed", top: pos.top, left: pos.left, width }}
-      className="z-50 max-h-[360px] overflow-y-auto rounded-[16px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] shadow-[0px_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-[24px]"
+      className="z-50 max-h-[360px] overflow-y-auto rounded-[20px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] shadow-[0px_12px_80px_rgba(0,0,0,0.16)] backdrop-blur-[24px]"
     >
       {children}
     </div>,
@@ -105,20 +105,66 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex h-[40px] shrink-0 items-center gap-[2px] rounded-full bg-[var(--fill)] p-[4px]">
+    <div className="flex h-[40px] shrink-0 items-center overflow-hidden rounded-full bg-[var(--fill)]">
       {options.map((opt) => (
         <button
           key={opt}
           onClick={() => onChange(opt)}
-          className={`flex h-[32px] items-center rounded-full px-[14px] text-[15px] font-semibold transition-colors ${
+          className={`flex h-full items-center rounded-full px-[14px] text-[16px] font-medium tracking-[0.2px] transition-colors ${
             value === opt
-              ? "bg-[var(--background)] text-[var(--foreground)] shadow-[0px_1px_2px_rgba(0,0,0,0.06)]"
-              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              ? "border-2 border-[var(--foreground)] bg-[var(--background)] text-[var(--foreground)] shadow-[0px_1px_1px_rgba(0,0,0,0.04)]"
+              : "text-[var(--muted-strong)] hover:text-[var(--foreground)]"
           }`}
         >
           {opt}
         </button>
       ))}
+    </div>
+  );
+}
+
+/* ── Experience dropdown (Apps/Sites) ── */
+function ExperienceDropdown({ value, onChange }: { value: Experience; onChange: (e: Experience) => void }) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  return (
+    <div className="shrink-0">
+      <button
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-[40px] items-center gap-x-[4px] rounded-full border-2 border-[var(--foreground)] pl-[14px] pr-[10px] text-[16px] font-medium tracking-[0.2px] text-[var(--foreground)]"
+      >
+        {value === "apps" ? "Apps" : "Sites"}
+        <svg
+          className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+        >
+          <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <Dropdown open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={220}>
+        {(["apps", "sites"] as Experience[]).map((opt) => {
+          const isOn = value === opt;
+          return (
+            <button
+              key={opt}
+              onClick={() => {
+                onChange(opt);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-x-[8px] rounded-[12px] px-[12px] py-[8px] text-left text-[16px] transition-colors hover:bg-[var(--fill)] ${
+                isOn ? "font-medium text-[var(--foreground)]" : "text-[var(--muted-strong)]"
+              }`}
+            >
+              <span className="flex-1">{opt === "apps" ? "Apps" : "Sites"}</span>
+              {isOn && <Check />}
+            </button>
+          );
+        })}
+      </Dropdown>
     </div>
   );
 }
@@ -295,24 +341,7 @@ export default function SearchFilters({
   return (
     <div className="flex items-center gap-x-[16px]">
       <div className="scrollbar-none flex min-w-0 grow items-center gap-x-[10px] overflow-x-auto">
-        <div className="flex shrink-0 items-center gap-x-[4px]">
-          {(["apps", "sites"] as Experience[]).map((opt) => {
-            const on = experience === opt;
-            return (
-              <button
-                key={opt}
-                onClick={() => onExperienceChange(opt)}
-                className={`h-[40px] rounded-full px-[18px] text-[15px] font-semibold transition-colors ${
-                  on
-                    ? "bg-[var(--foreground)] text-[var(--background)]"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {opt === "apps" ? "Apps" : "Sites"}
-              </button>
-            );
-          })}
-        </div>
+        <ExperienceDropdown value={experience} onChange={onExperienceChange} />
 
         <Divider />
 
