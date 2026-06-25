@@ -653,8 +653,10 @@ export default function SearchOverlay({
   useEffect(() => {
     if (open && !wasOpen.current) {
       wasOpen.current = true;
-      setEditing(initialQuery.trim().length > 0 || Object.keys(initialFilters).length > 0);
-      setEditFilters(initialFilters);
+      // Editing only when there was a query; filters alone start a fresh search.
+      const isEditing = initialQuery.trim().length > 0;
+      setEditing(isEditing);
+      setEditFilters(isEditing ? initialFilters : {});
     } else if (!open) {
       wasOpen.current = false;
     }
