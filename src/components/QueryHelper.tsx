@@ -12,7 +12,7 @@ const EXAMPLE_QUERIES = [
   "finance empty state",
 ];
 
-const STORAGE_KEY = "queryHelperDismissed";
+const STORAGE_KEY = "queryHelperDismissed_v2";
 
 function SparkIcon() {
   return (
@@ -46,7 +46,7 @@ export default function QueryHelper({ onQueryClick }: { onQueryClick: (q: string
 
   return (
     <div
-      className={`fixed right-[var(--container-x-padding)] top-[112px] z-40 hidden w-[320px] flex-col gap-y-[12px] rounded-[20px] border border-[var(--border)] bg-[var(--overlay)] p-[16px] shadow-[0px_12px_48px_rgba(0,0,0,0.12)] backdrop-blur-[24px] transition-all duration-200 ease-out min-[1024px]:flex min-[1160px]:top-[80px] ${
+      className={`fixed right-[16px] top-[120px] z-40 hidden w-[300px] flex-col gap-y-[12px] rounded-[20px] border border-[var(--border)] bg-[var(--overlay)] p-[16px] shadow-[0px_12px_48px_rgba(0,0,0,0.12)] backdrop-blur-[24px] transition-all duration-200 ease-out min-[768px]:flex min-[1024px]:right-[24px] min-[1160px]:top-[80px] ${
         visible ? "translate-y-0 opacity-100" : "-translate-y-[8px] opacity-0"
       }`}
     >
