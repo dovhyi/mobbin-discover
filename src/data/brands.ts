@@ -11,7 +11,8 @@ export interface Brand {
   ratingCount: string;
   category: string;
   platforms: string[];
-  screens: string[]; // Mobbin image URLs for the brand card strip
+  screens: string[]; // portrait iOS screens for the brand card strip
+  screensWeb: string[]; // landscape web screens for the brand card strip
   href: string; // canonical Mobbin app page
 }
 
@@ -33,6 +34,14 @@ export const BRANDS: Record<string, Brand> = {
       "https://mobbin.com/api/mcp/short/x5ZouumS",
       "https://mobbin.com/api/mcp/short/v3DxsxAJ",
     ],
+    screensWeb: [
+      "https://mobbin.com/api/mcp/short/yayqOdT1",
+      "https://mobbin.com/api/mcp/short/yNsiBKZS",
+      "https://mobbin.com/api/mcp/short/0YpdLPEP",
+      "https://mobbin.com/api/mcp/short/K0KeHYzO",
+      "https://mobbin.com/api/mcp/short/VuVVrljM",
+      "https://mobbin.com/api/mcp/short/gye9yYSf",
+    ],
   },
   shopify: {
     name: "Shopify",
@@ -50,6 +59,14 @@ export const BRANDS: Record<string, Brand> = {
       "https://mobbin.com/api/mcp/short/Z7zKlUDK",
       "https://mobbin.com/api/mcp/short/nWo7Q5g3",
       "https://mobbin.com/api/mcp/short/Gt3AxXRG",
+    ],
+    screensWeb: [
+      "https://mobbin.com/api/mcp/short/LtZKdaPH",
+      "https://mobbin.com/api/mcp/short/ExZy6kd3",
+      "https://mobbin.com/api/mcp/short/vUp4bDSG",
+      "https://mobbin.com/api/mcp/short/XoeiRm04",
+      "https://mobbin.com/api/mcp/short/ZgkI6GC8",
+      "https://mobbin.com/api/mcp/short/l4Cb0H4h",
     ],
   },
 };
