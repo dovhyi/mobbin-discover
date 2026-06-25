@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import TabsBar, { sortOptionsFor } from "@/components/TabsBar";
 import AppCardsGrid from "@/components/AppCardsGrid";
 import SearchOverlay from "@/components/SearchOverlay";
+import QueryHelper from "@/components/QueryHelper";
 
 type Experience = "Apps" | "Sites";
 type Platform = "iOS" | "Web";
@@ -12,6 +13,7 @@ type Platform = "iOS" | "Web";
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTab, setSearchTab] = useState("Trending");
+  const [searchQuery, setSearchQuery] = useState("");
   const [experience, setExperience] = useState<Experience>("Apps");
   const [platform, setPlatform] = useState<Platform>("iOS");
   const [filter, setFilter] = useState("Trending");
@@ -19,13 +21,22 @@ export default function Home() {
 
   const openSearch = useCallback(() => {
     setSearchTab("Trending");
+    setSearchQuery("");
     setSearchOpen(true);
   }, []);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
+  // Open the search modal pre-filled with an example query.
+  const openQuery = useCallback((q: string) => {
+    setSearchTab("Trending");
+    setSearchQuery(q);
+    setSearchOpen(true);
+  }, []);
+
   // Open the search modal on the tab matching the current page filter.
   const openFilters = useCallback(() => {
     setSearchTab(filter);
+    setSearchQuery("");
     setSearchOpen(true);
   }, [filter]);
 
@@ -91,12 +102,14 @@ export default function Home() {
   return (
     <div className="bg-[var(--background)]">
       <Navbar onSearchClick={openSearch} />
+      <QueryHelper onQueryClick={openQuery} />
       <SearchOverlay
         open={searchOpen}
         onClose={closeSearch}
         initialTab={searchTab}
         experience={experience}
         platform={platform}
+        initialQuery={searchQuery}
       />
       <main
         className="mx-auto flex w-full grow flex-col"
