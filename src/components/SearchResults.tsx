@@ -343,11 +343,7 @@ function ResultGrid({
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[40px] ${cols}`}>
-      {brand && (
-        <div className="col-span-full">
-          <BrandCard brand={brand} />
-        </div>
-      )}
+      {brand && <BrandCard brand={brand} />}
       {Array.from({ length: count }).map((_, i) =>
         screens[i] ? (
           <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={variant} sites={sites} />

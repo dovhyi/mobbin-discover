@@ -73,12 +73,7 @@ export function BrandBanner({ brand }: { brand: Brand }) {
       className="theme-dark flex items-center gap-[16px] overflow-hidden rounded-[24px] border border-[rgba(237,237,237,0.08)] p-[16px] min-[720px]:gap-[24px]"
       style={bg(brand.color)}
     >
-      <a
-        href={brand.href}
-        target="_blank"
-        rel="noreferrer"
-        className="flex min-w-0 flex-[1_1_0] items-center gap-[16px]"
-      >
+      <div className="flex min-w-0 flex-[1_1_0] items-center gap-[16px]">
         <BrandLogo brand={brand} />
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[16px] font-medium leading-[22px] tracking-[0.2px] text-white">
@@ -88,7 +83,7 @@ export function BrandBanner({ brand }: { brand: Brand }) {
             {brand.description}
           </span>
         </div>
-      </a>
+      </div>
 
       <div className="hidden flex-[1_1_0] items-start gap-[16px] min-[900px]:flex">
         <div className="flex min-w-0 flex-[1_1_0]">
