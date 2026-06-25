@@ -34,6 +34,7 @@ function Dropdown({
   onClose,
   width = 280,
   align = "left",
+  dark = false,
   children,
 }: {
   open: boolean;
@@ -41,6 +42,7 @@ function Dropdown({
   onClose: () => void;
   width?: number;
   align?: "left" | "right";
+  dark?: boolean;
   children: React.ReactNode;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -86,7 +88,7 @@ function Dropdown({
     <div
       ref={menuRef}
       style={{ position: "fixed", top: pos.top, left: pos.left, width }}
-      className="z-50 max-h-[360px] overflow-y-auto rounded-[20px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] shadow-[0px_12px_80px_rgba(0,0,0,0.16)] backdrop-blur-[24px]"
+      className={`${dark ? "theme-dark " : ""}z-50 max-h-[360px] overflow-y-auto rounded-[20px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] text-[var(--foreground)] shadow-[0px_12px_80px_rgba(0,0,0,0.16)] backdrop-blur-[24px]`}
     >
       {children}
     </div>,
@@ -180,12 +182,14 @@ function DimensionChip({
   selected,
   onToggle,
   onClear,
+  dark = false,
 }: {
   experience: Experience;
   dimension: string;
   selected: string[];
   onToggle: (value: string) => void;
   onClear: () => void;
+  dark?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -281,7 +285,7 @@ function DimensionChip({
         )}
       </button>
 
-      <Dropdown open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={300}>
+      <Dropdown open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={300} dark={dark}>
         <div className="mb-[4px] flex items-center gap-x-[8px] rounded-[10px] px-[12px] py-[8px]">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2">
             <circle cx="11" cy="11" r="7" />
@@ -380,6 +384,7 @@ interface SearchFiltersProps {
   count: number;
   countNoun: string;
   dimensionsOnly?: boolean;
+  dark?: boolean;
 }
 
 function DimensionChips({
@@ -388,7 +393,10 @@ function DimensionChips({
   onToggleFilter,
   onClearDim,
   onReset,
-}: Pick<SearchFiltersProps, "experience" | "filters" | "onToggleFilter" | "onClearDim" | "onReset">) {
+  dark = false,
+}: Pick<SearchFiltersProps, "experience" | "filters" | "onToggleFilter" | "onClearDim" | "onReset"> & {
+  dark?: boolean;
+}) {
   const hasActive = Object.values(filters).some((v) => v.length > 0);
   return (
     <div className="scrollbar-none flex items-center gap-x-[10px] overflow-x-auto">
@@ -400,6 +408,7 @@ function DimensionChips({
           selected={filters[dim] ?? []}
           onToggle={(value) => onToggleFilter(dim, value)}
           onClear={() => onClearDim(dim)}
+          dark={dark}
         />
       ))}
       {hasActive && (
@@ -427,6 +436,7 @@ export default function SearchFilters({
   count,
   countNoun,
   dimensionsOnly = false,
+  dark = false,
 }: SearchFiltersProps) {
   if (dimensionsOnly) {
     return (
@@ -436,6 +446,7 @@ export default function SearchFilters({
         onToggleFilter={onToggleFilter}
         onClearDim={onClearDim}
         onReset={onReset}
+        dark={dark}
       />
     );
   }

@@ -628,6 +628,7 @@ export default function SearchOverlay({
         : "standard";
   const mode: SearchMode = modeOverride ?? autoMode;
   const extractSummary = Object.values(extracted.filters).flat().join(" · ");
+  const extractCount = Object.values(extracted.filters).flat().length;
 
   const runSearch = useCallback(() => {
     const params: Record<string, string> = { exp: expSlug };
@@ -857,7 +858,7 @@ export default function SearchOverlay({
     <>
       {/* Backdrop overlay — hidden on mobile (full-screen modal covers everything) */}
       <div
-        className={`fixed inset-0 z-50 bg-neutral-900/80 backdrop-blur-[4px] transition-opacity duration-200 ease-out max-[719px]:hidden ${visible ? "opacity-100" : "opacity-0"}`}
+        className={`fixed inset-0 z-50 bg-[var(--backdrop)] backdrop-blur-[4px] transition-opacity duration-200 ease-out max-[719px]:hidden ${visible ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
       />
 
@@ -865,7 +866,7 @@ export default function SearchOverlay({
       <div
         ref={dialogRef}
         role="dialog"
-        className={`fixed inset-0 z-50 flex flex-col items-stretch transition-all duration-200 ease-out min-[720px]:inset-auto min-[720px]:top-[120px] min-[720px]:left-1/2 min-[720px]:w-[816px] min-[720px]:max-w-full min-[720px]:-translate-x-1/2 ${visible ? "opacity-100 min-[720px]:translate-y-0 min-[720px]:scale-100" : "opacity-0 min-[720px]:-translate-y-[16px] min-[720px]:scale-[0.98]"}`}
+        className={`theme-dark fixed inset-0 z-50 flex flex-col items-stretch transition-all duration-200 ease-out min-[720px]:inset-auto min-[720px]:top-[120px] min-[720px]:left-1/2 min-[720px]:w-[816px] min-[720px]:max-w-full min-[720px]:-translate-x-1/2 ${visible ? "opacity-100 min-[720px]:translate-y-0 min-[720px]:scale-100" : "opacity-0 min-[720px]:-translate-y-[16px] min-[720px]:scale-[0.98]"}`}
       >
         <div
           className={`relative flex-1 overflow-hidden bg-[var(--background-elevated)] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[var(--overlay)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
@@ -946,9 +947,10 @@ export default function SearchOverlay({
               </button>
             </div>
             </div>
-            {editing && (
+            {editing && Object.keys(editFilters).length > 0 && (
               <SearchFilters
                 dimensionsOnly
+                dark
                 experience={selExp === "Sites" ? "sites" : "apps"}
                 onExperienceChange={() => {}}
                 platform={selPlatform}
@@ -1232,12 +1234,16 @@ export default function SearchOverlay({
                       {mode === "deep" && (
                         <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{query}</span>
                       )}
-                      {mode === "extract" && extractSummary && (
-                        <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">
-                          Filter: {extractSummary}
-                        </span>
-                      )}
                     </div>
+
+                    {mode === "extract" && extractCount > 0 && (
+                      <div className="flex shrink-0 items-center gap-x-[8px]">
+                        <span className="text-[14px] leading-[20px] text-[var(--muted-strong)]">Filters</span>
+                        <span className="flex h-[24px] min-w-[24px] items-center justify-center rounded-full bg-[var(--fill)] px-[7px] text-[13px] font-semibold leading-none text-[var(--foreground)]">
+                          {extractCount}
+                        </span>
+                      </div>
+                    )}
 
                     <div ref={modeMenuRef} className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button

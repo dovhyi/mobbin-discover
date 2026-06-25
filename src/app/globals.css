@@ -26,6 +26,7 @@
   --fill: rgba(0, 0, 0, 0.05);
   --fill-hover: rgba(0, 0, 0, 0.09);
   --scrollbar: rgba(0, 0, 0, 0.18);
+  --backdrop: rgba(240, 240, 242, 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,7 +46,33 @@
     --fill: rgba(237, 237, 237, 0.08);
     --fill-hover: rgba(237, 237, 237, 0.14);
     --scrollbar: rgba(255, 255, 255, 0.15);
+    --backdrop: rgba(0, 0, 0, 0.8);
   }
+}
+
+/* Force a dark palette within a subtree, regardless of the page theme. */
+.theme-dark {
+  color-scheme: dark;
+  --background: #141414;
+  --background-elevated: #1a1a1a;
+  --overlay: rgba(38, 38, 38, 0.88);
+  --foreground: #ffffff;
+  --muted: #707070;
+  --muted-strong: #adadad;
+  --card: #222222;
+  --card-hover: #272727;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.1);
+  --fill: rgba(237, 237, 237, 0.08);
+  --fill-hover: rgba(237, 237, 237, 0.14);
+  --scrollbar: rgba(255, 255, 255, 0.15);
+}
+
+/* Within a forced-dark subtree, white image assets must NOT be inverted. */
+.theme-dark .asset-invert {
+  filter: none;
 }
 
 @media (min-width: 720px) {
