@@ -110,6 +110,7 @@ export default function Home() {
         experience={experience}
         platform={platform}
         initialQuery={searchQuery}
+        allowEditing={false}
       />
       <main
         className="mx-auto flex w-full grow flex-col"

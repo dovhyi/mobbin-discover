@@ -468,6 +468,7 @@ interface SearchOverlayProps {
   platform?: "iOS" | "Web";
   initialQuery?: string;
   initialFilters?: Filters;
+  allowEditing?: boolean;
 }
 
 const EMPTY_FILTERS: Filters = {};
@@ -480,6 +481,7 @@ export default function SearchOverlay({
   platform = "iOS",
   initialQuery = "",
   initialFilters = EMPTY_FILTERS,
+  allowEditing = true,
 }: SearchOverlayProps) {
   const [selExp, setSelExp] = useState<"Apps" | "Sites">(experience);
   const [selPlatform, setSelPlatform] = useState<"iOS" | "Web">(platform);
@@ -654,13 +656,13 @@ export default function SearchOverlay({
     if (open && !wasOpen.current) {
       wasOpen.current = true;
       // Editing only when there was a query; filters alone start a fresh search.
-      const isEditing = initialQuery.trim().length > 0;
+      const isEditing = allowEditing && initialQuery.trim().length > 0;
       setEditing(isEditing);
       setEditFilters(isEditing ? initialFilters : {});
     } else if (!open) {
       wasOpen.current = false;
     }
-  }, [open, initialQuery, initialFilters]);
+  }, [open, initialQuery, initialFilters, allowEditing]);
 
   const toggleEditFilter = useCallback((dim: string, value: string) => {
     setEditFilters((prev) => {
