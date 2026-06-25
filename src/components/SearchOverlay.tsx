@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import searchData from "@/data/searchResults.json";
+import { DIMENSIONS, FILTER_DATA } from "@/lib/search";
 
 /* ── Icon helpers (inline SVGs from mobbin.com) ── */
 
@@ -222,6 +223,65 @@ const trendingSites = [
 const trendingSiteCategories = ["Business", "Technology", "Shopping", "Portfolio"];
 const trendingSiteSections = ["Hero", "Pricing", "Features", "404", "Social Proof", "Footer", "About", "Showcase", "Navigation"];
 const trendingSiteStyles = ["Colorful", "Dark", "Minimal", "Illustration", "Motion", "Photography", "Scroll Effects"];
+
+/* ── Search modes (Standard / Deep / Filter extraction) ── */
+
+type SearchMode = "standard" | "deep" | "extract";
+
+function DeepIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M8.33398 3.39062C5.50708 3.79498 3.33398 6.22616 3.33398 9.16488C3.33398 12.3865 5.94566 14.9982 9.16732 14.9982C12.1061 14.9982 14.5372 12.8251 14.9416 9.99822" stroke="currentColor" strokeWidth="2" />
+      <path d="M16.6667 16.6667L13.375 13.375" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+      <path d="M13.6667 1.66406H13L12.1667 3.83073L10 4.66406V5.33073L12.1667 6.16406L13 8.33073H13.6667L14.5 6.16406L16.6667 5.33073V4.66406L14.5 3.83073L13.6667 1.66406Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ExtractIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M3 5h14M5 10h10M8 15h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SparkIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2l1.7 5L17 8.7l-5 1.6L10 16l-2-5.7L3 8.7l5.3-1.7L10 2z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MenuCheck() {
+  return (
+    <svg className="ml-auto shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M3 8L6.5 11.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Pull known filter values out of a free-text query (bounded, case-insensitive).
+function extractFilters(query: string, exp: "apps" | "sites") {
+  const filters: Record<string, string[]> = {};
+  let remaining = ` ${query.toLowerCase()} `;
+  DIMENSIONS[exp].forEach((dim) => {
+    FILTER_DATA[exp][dim].forEach((group) => {
+      group.items.forEach((item) => {
+        const il = ` ${item.toLowerCase()} `;
+        if (remaining.includes(il)) {
+          (filters[dim] ||= []).push(item);
+          remaining = remaining.replace(il, " ");
+        }
+      });
+    });
+  });
+  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "screen", "screens", "page", "that", "match"]);
+  const words = remaining.split(/\s+/).filter((w) => w && !STOP.has(w));
+  const leftover = words.join(" ");
+  return { filters, leftover, valuable: leftover.length >= 3 };
+}
 
 // Deterministic per-item count so the list looks populated without real data.
 function countFor(label: string): number {
@@ -465,6 +525,50 @@ export default function SearchOverlay({
     };
   }, [open]);
 
+  // Search mode — auto-detected from the query, overridable via the ··· menu.
+  const [modeOverride, setModeOverride] = useState<SearchMode | null>(null);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) setModeOverride(null);
+    else setModeMenuOpen(false);
+  }, [open]);
+  useEffect(() => {
+    if (!modeMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (modeMenuRef.current && !modeMenuRef.current.contains(e.target as Node)) setModeMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [modeMenuOpen]);
+
+  const expKey = selExp === "Sites" ? "sites" : "apps";
+  const extracted = useMemo(() => extractFilters(query, expKey), [query, expKey]);
+  const autoMode: SearchMode = query.trim().length === 0
+    ? "standard"
+    : Object.keys(extracted.filters).length
+      ? "extract"
+      : query.trim().split(/\s+/).length >= 4
+        ? "deep"
+        : "standard";
+  const mode: SearchMode = modeOverride ?? autoMode;
+  const extractSummary = Object.values(extracted.filters).flat().join(" · ");
+
+  const runSearch = useCallback(() => {
+    if (mode === "extract" && Object.keys(extracted.filters).length) {
+      const params: Record<string, string> = { exp: expSlug };
+      if (selExp !== "Sites") params.platform = selPlatform;
+      const f = Object.entries(extracted.filters)
+        .flatMap(([d, vs]) => vs.map((v) => `${d}:${v}`))
+        .join("~");
+      if (f) params.f = f;
+      if (extracted.valuable && extracted.leftover) params.q = extracted.leftover;
+      navigate(params);
+    } else {
+      goQuery(query);
+    }
+  }, [mode, extracted, expSlug, selExp, selPlatform, navigate, goQuery, query]);
+
   // Animation: mount/unmount with transition
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -672,7 +776,7 @@ export default function SearchOverlay({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    goQuery(query);
+                    runSearch();
                   }
                 }}
               />
@@ -954,16 +1058,80 @@ export default function SearchOverlay({
             <section className="overflow-hidden">
               <div className="h-full overflow-y-auto px-[20px] pb-[20px] pt-[8px]">
                 <div className="flex flex-col gap-y-[12px]">
-                  {/* Free text search row (index 0) */}
-                  <div onClick={() => goQuery(query)}>
-                    <ResultRow
-                      item={{ type: "search", name: query }}
-                      selected={selectedIndex === 0}
-                      rowRef={(el: HTMLDivElement | null) => {
-                        if (el) rowRefs.current.set(0, el);
-                        else rowRefs.current.delete(0);
-                      }}
-                    />
+                  {/* Mode-aware action row (index 0) */}
+                  <div
+                    ref={(el: HTMLDivElement | null) => {
+                      if (el) rowRefs.current.set(0, el);
+                      else rowRefs.current.delete(0);
+                    }}
+                    onClick={runSearch}
+                    className={`relative flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors ${
+                      selectedIndex === 0 ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
+                    }`}
+                  >
+                    <div className="flex size-[40px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--fill)]">
+                      {mode === "deep" ? <DeepIcon /> : mode === "extract" ? <ExtractIcon /> : <SearchIcon />}
+                    </div>
+                    <div className="flex grow flex-col overflow-hidden">
+                      <span className="truncate text-[16px] font-semibold leading-[24px]">
+                        {mode === "deep" ? "Deep Search" : query}
+                      </span>
+                      {mode === "deep" && (
+                        <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{query}</span>
+                      )}
+                      {mode === "extract" && extractSummary && (
+                        <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">
+                          Filter: {extractSummary}
+                        </span>
+                      )}
+                    </div>
+
+                    <div ref={modeMenuRef} className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setModeMenuOpen((o) => !o)}
+                        aria-label="Search mode"
+                        className="flex size-[32px] items-center justify-center rounded-full text-[var(--muted-strong)] transition-colors hover:bg-[var(--fill-hover)] hover:text-[var(--foreground)]"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <circle cx="4" cy="10" r="1.6" fill="currentColor" />
+                          <circle cx="10" cy="10" r="1.6" fill="currentColor" />
+                          <circle cx="16" cy="10" r="1.6" fill="currentColor" />
+                        </svg>
+                      </button>
+                      {modeMenuOpen && (
+                        <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-[280px] rounded-[16px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] shadow-[0px_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-[24px]">
+                          <div className="px-[12px] py-[6px] text-[13px] font-semibold text-[var(--muted)]">Search mode</div>
+                          {([
+                            ["deep", "Deep", <DeepIcon key="d" />],
+                            ["standard", "Standard", <SparkIcon key="s" />],
+                            ["extract", "Filter extraction", <ExtractIcon key="e" />],
+                          ] as const).map(([m, label, icon]) => (
+                            <button
+                              key={m}
+                              onClick={() => {
+                                setModeOverride(m);
+                                setModeMenuOpen(false);
+                              }}
+                              className={`flex w-full items-center gap-x-[8px] rounded-[10px] px-[12px] py-[8px] text-left text-[15px] transition-colors hover:bg-[var(--fill)] ${
+                                mode === m ? "text-[var(--foreground)]" : "text-[var(--muted-strong)]"
+                              }`}
+                            >
+                              {icon}
+                              <span className="font-medium">{label}</span>
+                              {m === "deep" && (
+                                <span className="rounded-full border border-[var(--border-strong)] px-[6px] py-[1px] text-[11px] font-semibold text-[var(--muted-strong)]">
+                                  BETA
+                                </span>
+                              )}
+                              {mode === m && <MenuCheck />}
+                            </button>
+                          ))}
+                          <p className="px-[12px] pb-[6px] pt-[8px] text-[13px] leading-[18px] text-[var(--muted)]">
+                            Deep Search is automatically enabled for longer, more complex queries. May result in longer loading times.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {results ? (
