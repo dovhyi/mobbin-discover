@@ -178,20 +178,33 @@ const flowsList = [
   "Browsing Tutorial", "Logging In", "Adding to Cart",
 ];
 
+const siteCategoriesList = [
+  "Business", "Crypto", "Education", "Entertainment", "Finance", "Food", "Health",
+  "Lifestyle", "Portfolio", "Shopping", "Social", "Technology", "Travel", "Other",
+];
+
 const sectionsList = [
-  "Hero", "Features", "Pricing", "Testimonials", "FAQ", "Footer", "CTA", "Newsletter",
+  "404", "About", "Blog", "CTA", "Comparison", "Contact", "Downloads", "FAQ",
+  "Features", "Footer", "Hero", "How It Works", "Logos", "Navigation", "Newsletter",
+  "Pricing", "Roadmap", "Stats", "Team", "Testimonials",
 ];
 
 const stylesList = [
-  "Minimal", "Bold", "Playful", "Brutalist", "Corporate", "Gradient", "Dark", "Monochrome",
+  "3D", "Black & White", "Bold", "Brutalist", "Colorful", "Dark", "Editorial", "Fun",
+  "Glass", "Grid", "Illustration", "Light", "Minimal", "Monochrome", "Motion",
+  "Neumorphism", "Playful", "Retro", "Serif", "Vibrant",
 ];
 
-// Items shown in the content area for each (non-Trending) sidebar tab.
+// Items for each tab — Apps tabs vs Sites tabs.
 const TAB_ITEMS: Record<string, string[]> = {
   Categories: allCategories,
   Screens: screensList,
   "UI Elements": uiElementsList,
   Flows: flowsList,
+};
+
+const SITE_TAB_ITEMS: Record<string, string[]> = {
+  Categories: siteCategoriesList,
   Sections: sectionsList,
   Styles: stylesList,
 };
@@ -326,13 +339,16 @@ export default function SearchOverlay({
   platform = "iOS",
   initialQuery = "",
 }: SearchOverlayProps) {
-  const sidebarTabs = experience === "Sites" ? sitesTabs : appsTabs;
-  const mobileActive = experience !== "Sites" && platform === "iOS";
-  const desktopActive = experience !== "Sites" && platform === "Web";
-  const sitesActive = experience === "Sites";
+  const [selExp, setSelExp] = useState<"Apps" | "Sites">(experience);
+  const [selPlatform, setSelPlatform] = useState<"iOS" | "Web">(platform);
+
+  const sidebarTabs = selExp === "Sites" ? sitesTabs : appsTabs;
+  const mobileActive = selExp !== "Sites" && selPlatform === "iOS";
+  const desktopActive = selExp !== "Sites" && selPlatform === "Web";
+  const sitesActive = selExp === "Sites";
 
   const router = useRouter();
-  const expSlug = experience === "Sites" ? "sites" : "apps";
+  const expSlug = selExp === "Sites" ? "sites" : "apps";
   const navigate = useCallback(
     (params: Record<string, string>) => {
       onClose();
@@ -342,13 +358,20 @@ export default function SearchOverlay({
   );
   const goQuery = useCallback(
     (q: string) => {
-      if (q.trim()) navigate({ q: q.trim(), exp: expSlug });
+      if (!q.trim()) return;
+      const params: Record<string, string> = { exp: expSlug, q: q.trim() };
+      if (selExp !== "Sites") params.platform = selPlatform;
+      navigate(params);
     },
-    [navigate, expSlug],
+    [navigate, expSlug, selExp, selPlatform],
   );
   const goFilter = useCallback(
-    (dim: string, value: string) => navigate({ exp: expSlug, f: `${dim}:${value}` }),
-    [navigate, expSlug],
+    (dim: string, value: string) => {
+      const params: Record<string, string> = { exp: expSlug, f: `${dim}:${value}` };
+      if (selExp !== "Sites") params.platform = selPlatform;
+      navigate(params);
+    },
+    [navigate, expSlug, selExp, selPlatform],
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -367,7 +390,24 @@ export default function SearchOverlay({
     if (open) setQuery(initialQuery);
   }, [open, initialQuery]);
 
-  const tabItems = TAB_ITEMS[activeTab] ?? [];
+  // Reflect the page's lens when the modal opens.
+  useEffect(() => {
+    if (open) {
+      setSelExp(experience);
+      setSelPlatform(platform);
+    }
+  }, [open, experience, platform]);
+
+  const selectLens = useCallback((exp: "Apps" | "Sites", plat?: "iOS" | "Web") => {
+    setSelExp(exp);
+    if (plat) setSelPlatform(plat);
+    setActiveTab((prev) => {
+      const tabs = exp === "Sites" ? sitesTabs : appsTabs;
+      return tabs.some((t) => t.label === prev) ? prev : "Trending";
+    });
+  }, []);
+
+  const tabItems = (selExp === "Sites" ? SITE_TAB_ITEMS[activeTab] : TAB_ITEMS[activeTab]) ?? [];
 
   // Animation: mount/unmount with transition
   const [mounted, setMounted] = useState(false);
@@ -559,13 +599,22 @@ export default function SearchOverlay({
               )}
             </div>
             <div className="flex items-center gap-x-[16px] text-[var(--muted)]">
-              <button className={`hidden min-[720px]:block ${mobileActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
+              <button
+                onClick={() => selectLens("Apps", "iOS")}
+                className={`hidden min-[720px]:block ${mobileActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}
+              >
                 <MobileIcon />
               </button>
-              <button className={`hidden min-[720px]:block ${desktopActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
+              <button
+                onClick={() => selectLens("Apps", "Web")}
+                className={`hidden min-[720px]:block ${desktopActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}
+              >
                 <DesktopIcon />
               </button>
-              <button className={`hidden min-[720px]:block ${sitesActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}>
+              <button
+                onClick={() => selectLens("Sites")}
+                className={`hidden min-[720px]:block ${sitesActive ? "text-[var(--foreground)]" : "transition-colors hover:text-[var(--foreground)]"}`}
+              >
                 <SitesIcon />
               </button>
               {/* Mobile cancel button */}

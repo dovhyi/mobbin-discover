@@ -224,12 +224,7 @@ function CornerBadge({ label, icon }: { label: string; icon?: boolean }) {
 
 function PhoneFrame() {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-t-[28px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
-      <div className="flex items-center justify-between px-[14px] pt-[10px] text-[10px] font-semibold text-[var(--foreground)]">
-        <span>9:41</span>
-        <span className="inline-block h-[8px] w-[14px] rounded-[2px] border border-current opacity-70" />
-      </div>
-    </div>
+    <div className="aspect-[9/19] h-[80%] rounded-[24px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
   );
 }
 
@@ -276,7 +271,7 @@ function MobileCard({ app }: { app: MobileApp }) {
     <div className="group/cell relative flex flex-col gap-y-[16px]">
       <a
         href="#"
-        className="relative flex aspect-[3/5] items-end justify-center overflow-hidden rounded-[28px] bg-[var(--card)] px-[14%] pt-[12%] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
+        className="relative flex aspect-[3/5] items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
         <PhoneFrame />
         <CornerBadge label={app.badge} />
@@ -304,7 +299,7 @@ export function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
   return (
     <div className="flex flex-col gap-y-[16px]">
       {variant === "ios" ? (
-        <div className="relative flex aspect-[3/5] items-end justify-center overflow-hidden rounded-[28px] bg-[var(--card)] px-[14%] pt-[12%]">
+        <div className="relative flex aspect-[3/5] items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)]">
           <PhoneFrame />
         </div>
       ) : (

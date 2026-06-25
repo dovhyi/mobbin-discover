@@ -161,22 +161,36 @@ function InjectionPanel({
   href?: string;
   children: React.ReactNode;
 }) {
+  const arrow = (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3 7h8M11 7L7.5 3.5M11 7L7.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
   return (
     <div className="rounded-[24px] border border-[var(--border)] p-[20px] min-[720px]:p-[24px]">
-      <div className="mb-[20px] flex items-center gap-x-[8px] text-[var(--muted-strong)]">
-        {icon}
-        <h3 className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{title}</h3>
+      <div className="mb-[20px] flex items-center justify-between gap-x-[12px]">
+        <div className="flex items-center gap-x-[8px] text-[var(--muted-strong)]">
+          {icon}
+          <h3 className="text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">{title}</h3>
+        </div>
+        {action && href && (
+          <Link
+            href={href}
+            className="hidden shrink-0 items-center gap-x-[4px] text-[14px] font-semibold text-[var(--muted-strong)] transition-colors hover:text-[var(--foreground)] min-[720px]:flex"
+          >
+            {action}
+            {arrow}
+          </Link>
+        )}
       </div>
       {children}
       {action && href && (
         <Link
           href={href}
-          className="mt-[20px] flex h-[44px] w-full items-center justify-center gap-x-[6px] rounded-full border border-[var(--border-strong)] text-[14px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
+          className="mt-[20px] flex h-[44px] w-full items-center justify-center gap-x-[6px] rounded-full border border-[var(--border-strong)] text-[14px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] min-[720px]:hidden"
         >
           {action}
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 7h8M11 7L7.5 3.5M11 7L7.5 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {arrow}
         </Link>
       )}
     </div>
@@ -270,9 +284,24 @@ function ResultGrid({ type, variant, count }: { type: ResultType; variant: Varia
   );
 }
 
-function ReachPanelBody({ target }: { target: Lens }) {
+// Reach shows the other platform at the SAME granularity as the active grid.
+function ReachPanelBody({ target, type }: { target: Lens; type: ResultType }) {
   const v = LENS_VARIANT[target];
   // Aspect-flip shelf: portrait for iOS, landscape for web/sites.
+  if (type === "flows") {
+    return <FlowCard variant={v} />;
+  }
+  if (type === "screens") {
+    return (
+      <Shelf
+        gridCols={v === "ios" ? "min-[720px]:grid-cols-5" : "min-[720px]:grid-cols-3"}
+        itemWidth={v === "ios" ? "w-[40%]" : "w-[82%]"}
+        items={Array.from({ length: v === "ios" ? 5 : 3 }).map((_, i) => (
+          <BareScreenCard key={i} variant={v} />
+        ))}
+      />
+    );
+  }
   const count = v === "ios" ? 4 : 3;
   return (
     <Shelf
@@ -352,7 +381,7 @@ export default function SearchResults({ experience, platform, type, filters, que
           action={`View ${LENS_LABEL[reach.target]}`}
           href={reach.href}
         >
-          <ReachPanelBody target={reach.target} />
+          <ReachPanelBody target={reach.target} type={type} />
         </InjectionPanel>
       )}
 

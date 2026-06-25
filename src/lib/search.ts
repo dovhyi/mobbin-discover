@@ -47,13 +47,13 @@ export const FILTER_DATA: Record<Experience, Record<string, FilterGroup[]>> = {
   },
   sites: {
     Categories: [
-      { name: null, items: ["Business", "Crypto", "Education", "Entertainment", "Finance", "Food", "Health", "Lifestyle", "Portfolio", "Shopping", "Social", "Sports", "Tech", "Travel"] },
+      { name: null, items: ["Business", "Crypto", "Education", "Entertainment", "Finance", "Food", "Health", "Lifestyle", "Portfolio", "Shopping", "Social", "Technology", "Travel", "Other"] },
     ],
     Sections: [
-      { name: null, items: ["404", "About", "Blog", "CTA", "Comparison", "Contact", "Downloads", "FAQ", "Features", "Footer", "Hero", "Logos", "Navigation", "Newsletter", "Pricing", "Roadmap", "Stats", "Team", "Testimonials"] },
+      { name: null, items: ["404", "About", "Blog", "CTA", "Comparison", "Contact", "Downloads", "FAQ", "Features", "Footer", "Hero", "How It Works", "Logos", "Navigation", "Newsletter", "Pricing", "Roadmap", "Stats", "Team", "Testimonials"] },
     ],
     Styles: [
-      { name: null, items: ["3D", "Black & White", "Bold", "Brutalist", "Colorful", "Dark", "Editorial", "Fun", "Glass", "Grid", "Illustration", "Minimal", "Monochrome", "Neumorphism", "Playful", "Retro", "Serif", "Vibrant"] },
+      { name: null, items: ["3D", "Black & White", "Bold", "Brutalist", "Colorful", "Dark", "Editorial", "Fun", "Glass", "Grid", "Illustration", "Light", "Minimal", "Monochrome", "Motion", "Neumorphism", "Playful", "Retro", "Serif", "Vibrant"] },
     ],
   },
 };
