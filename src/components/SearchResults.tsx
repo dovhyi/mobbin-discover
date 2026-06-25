@@ -14,6 +14,8 @@ import {
   siteScreens,
   type RealScreen,
 } from "@/data/mobbinScreens";
+import { brandFor } from "@/data/brands";
+import { BrandBanner, BrandCard } from "@/components/BrandSpotlight";
 import type { Experience, Filters, Platform, ResultType } from "@/lib/search";
 
 function filterHref(experience: Experience, platform: Platform, dim: string, value: string) {
@@ -431,8 +433,13 @@ export default function SearchResults({ experience, platform, type, filters, que
   const firstRowScreens: RealScreen[] =
     type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
 
+  // Brand spotlight: a card on app results, a banner on screen/flow results.
+  const brand = brandFor(query);
+
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
+      {brand && (type === "apps" ? <BrandCard brand={brand} /> : <BrandBanner brand={brand} />)}
+
       <ResultGrid type={type} variant={variant} count={b1} screens={firstRowScreens} sites={sites} />
 
       {reach && (

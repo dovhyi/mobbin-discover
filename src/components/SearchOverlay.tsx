@@ -650,6 +650,17 @@ export default function SearchOverlay({
     navigate(params);
   }, [mode, extracted, expSlug, selExp, selPlatform, navigate, query, editFilters]);
 
+  // Plain keyword search — ignores any extracted filter matches.
+  const runPlainSearch = useCallback(() => {
+    const params: Record<string, string> = { exp: expSlug };
+    if (selExp !== "Sites") params.platform = selPlatform;
+    const base: Filters = { ...editFilters };
+    if (query.trim()) params.q = query.trim();
+    const f = encodeF(base);
+    if (f) params.f = f;
+    navigate(params);
+  }, [expSlug, selExp, selPlatform, navigate, query, editFilters]);
+
   // Begin editing (back arrow / Esc returns to the default modal view).
   const wasOpen = useRef(false);
   useEffect(() => {
@@ -1192,7 +1203,8 @@ export default function SearchOverlay({
                 <div className="flex flex-col gap-y-[12px]">
                   {/* Single concept → direct filter match rows */}
                   {mode === "extract" && extracted.sourceCount <= 1 && extracted.matches.length > 0 ? (
-                    extracted.matches.map((m, i) => (
+                    <>
+                    {extracted.matches.map((m, i) => (
                       <div
                         key={`${m.dim}-${m.value}`}
                         ref={
@@ -1216,7 +1228,21 @@ export default function SearchOverlay({
                           <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{DIM_LABELS[m.dim]}</span>
                         </div>
                       </div>
-                    ))
+                    ))}
+                    {/* Always allow a plain keyword search, even when filters match. */}
+                    <div
+                      onClick={runPlainSearch}
+                      className="flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill)]"
+                    >
+                      <div className="flex size-[40px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--fill)]">
+                        <SearchIcon />
+                      </div>
+                      <div className="flex grow flex-col overflow-hidden">
+                        <span className="truncate text-[16px] font-semibold leading-[24px]">{query}</span>
+                        <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">Search</span>
+                      </div>
+                    </div>
+                    </>
                   ) : (
                   <div
                     ref={(el: HTMLDivElement | null) => {
