@@ -104,74 +104,85 @@ export function BrandBanner({ brand }: { brand: Brand }) {
   );
 }
 
-/* ── Vertical card — shown on app (iOS / web) results ── */
+/* ── Vertical card — shown on app (iOS / web) results ──
+   Wrapped to mirror a regular app card: the brand surface fills the same
+   aspect-ratio box as a neighbouring card's screenshot, and a blank row stands
+   in for the app info at the bottom so the cards always line up. */
 export function BrandCard({ brand, variant = "ios" }: { brand: Brand; variant?: "ios" | "web" }) {
   const isWeb = variant === "web";
   const screens = isWeb ? brand.screensWeb : brand.screens;
   return (
-    <div
-      className="theme-dark flex min-w-0 flex-col gap-[24px] self-start overflow-hidden rounded-[24px] p-[24px]"
-      style={bg(brand.color)}
-    >
-      {/* Header */}
-      <div className="flex w-full items-center gap-[12px]">
-        <a
-          href={brand.href}
-          target="_blank"
-          rel="noreferrer"
-          className="flex min-w-0 flex-[1_1_0] items-center gap-[8px]"
-        >
-          <BrandLogo brand={brand} />
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-[16px] font-medium leading-[22px] tracking-[0.2px] text-white">
-              {brand.name}
-            </span>
-            <span className="truncate text-[14px] leading-[20px] tracking-[0.2px] text-white/60">
-              {brand.description}
-            </span>
-          </div>
-        </a>
-        <SaveButton />
-      </div>
-
-      {/* Rating + Category */}
-      <div className="flex w-full items-center gap-[24px]">
-        <div className="w-[150px] shrink-0">
-          <Field label="Rating">
-            <Rating brand={brand} />
-          </Field>
-        </div>
-        <div className="w-[120px] shrink-0">
-          <Field label="Category">{brand.category}</Field>
-        </div>
-      </div>
-
-      {/* Screenshot strip (bleeds to the right edge, scrolls). Fixed heights so
-          the shots roughly match the neighbouring app card and never balloon. */}
-      <div className="scrollbar-none -mr-[24px] flex min-w-0 gap-[12px] overflow-x-auto pr-[24px]">
-        {screens.map((src, i) => (
-          <div
-            key={i}
-            className={`shrink-0 overflow-hidden rounded-[16px] border-[0.5px] border-[rgba(255,255,255,0.12)] ${
-              isWeb ? "aspect-[16/10] h-[200px]" : "aspect-[1180/2676] h-[380px]"
-            }`}
+    <div className="flex min-w-0 flex-col gap-y-[16px] self-start">
+      <div
+        className={`theme-dark flex min-w-0 flex-col gap-[24px] overflow-hidden rounded-[24px] p-[24px] ${
+          isWeb ? "aspect-square" : "aspect-[3/5]"
+        }`}
+        style={bg(brand.color)}
+      >
+        {/* Header */}
+        <div className="flex w-full shrink-0 items-center gap-[12px]">
+          <a
+            href={brand.href}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-w-0 flex-[1_1_0] items-center gap-[8px]"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`${brand.name} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
+            <BrandLogo brand={brand} />
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-[16px] font-medium leading-[22px] tracking-[0.2px] text-white">
+                {brand.name}
+              </span>
+              <span className="truncate text-[14px] leading-[20px] tracking-[0.2px] text-white/60">
+                {brand.description}
+              </span>
+            </div>
+          </a>
+          <SaveButton />
+        </div>
+
+        {/* Rating + Category */}
+        <div className="flex w-full shrink-0 items-center gap-[24px]">
+          <div className="w-[150px] shrink-0">
+            <Field label="Rating">
+              <Rating brand={brand} />
+            </Field>
           </div>
-        ))}
+          <div className="w-[120px] shrink-0">
+            <Field label="Category">{brand.category}</Field>
+          </div>
+        </div>
+
+        {/* Screenshot strip (bleeds to the right edge, scrolls). Flexes to fill
+            the remaining height so the box matches its aspect-ratio exactly. */}
+        <div className="scrollbar-none -mr-[24px] flex min-h-0 min-w-0 flex-1 gap-[12px] overflow-x-auto pr-[24px]">
+          {screens.map((src, i) => (
+            <div
+              key={i}
+              className={`h-full shrink-0 overflow-hidden rounded-[16px] border-[0.5px] border-[rgba(255,255,255,0.12)] ${
+                isWeb ? "aspect-[16/10]" : "aspect-[1180/2676]"
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`${brand.name} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
+            </div>
+          ))}
+        </div>
+
+        {/* Platforms */}
+        <div className="flex w-full shrink-0 flex-col">
+          <span className="text-[14px] leading-[20px] tracking-[0.2px] text-white/60">Platforms</span>
+          <p className="text-[16px] font-medium leading-[22px] tracking-[0.2px]">
+            <span className="text-white">{brand.platforms[0]}</span>
+            {brand.platforms.length > 1 && (
+              <span className="text-white/60">, {brand.platforms.slice(1).join(", ")}</span>
+            )}
+          </p>
+        </div>
       </div>
 
-      {/* Platforms */}
-      <div className="flex w-full flex-col">
-        <span className="text-[14px] leading-[20px] tracking-[0.2px] text-white/60">Platforms</span>
-        <p className="text-[16px] font-medium leading-[22px] tracking-[0.2px]">
-          <span className="text-white">{brand.platforms[0]}</span>
-          {brand.platforms.length > 1 && (
-            <span className="text-white/60">, {brand.platforms.slice(1).join(", ")}</span>
-          )}
-        </p>
-      </div>
+      {/* Blank stand-in for the app info row, keeping the card height aligned
+          with its neighbours. */}
+      <div className="h-[44px] w-full shrink-0" aria-hidden />
     </div>
   );
 }

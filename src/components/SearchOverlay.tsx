@@ -740,6 +740,9 @@ export default function SearchOverlay({
   }, [open]);
 
   const hasQuery = query.trim().length > 0;
+  // Show the carried filters + back button only while refining a non-empty
+  // query that has active filters. An empty field falls back to a fresh search.
+  const showEditing = editing && hasQuery && Object.keys(editFilters).length > 0;
 
   // Find matching search results from our dataset
   const results = useMemo(() => {
@@ -837,7 +840,7 @@ export default function SearchOverlay({
       if (!open) return;
 
       if (e.key === "Escape") {
-        if (editing) exitEditing();
+        if (showEditing) exitEditing();
         else onClose();
         return;
       }
@@ -885,7 +888,7 @@ export default function SearchOverlay({
         }
       }
     },
-    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, editing, exitEditing],
+    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, showEditing, exitEditing],
   );
 
   useEffect(() => {
@@ -919,7 +922,7 @@ export default function SearchOverlay({
           {/* ── Search input section ── */}
           <section className="flex flex-col gap-y-[14px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
             <div className="flex gap-x-[12px]">
-            {editing && (
+            {showEditing && (
               <button
                 onClick={exitEditing}
                 aria-label="Back"
@@ -949,16 +952,6 @@ export default function SearchOverlay({
                   }
                 }}
               />
-              {hasQuery && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="shrink-0 text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M10 19C14.9706 19 19 14.9706 19 10C19 5.02944 14.9706 1 10 1C5.02944 1 1 5.02944 1 10C1 14.9706 5.02944 19 10 19ZM6.0009 7.41414L8.58379 9.99703L6.0009 12.5799L7.41511 13.9941L9.99801 11.4112L12.5809 13.9941L13.9951 12.5799L11.4122 9.99703L13.9951 7.41414L12.5809 5.99992L9.99801 8.58282L7.41511 5.99992L6.0009 7.41414Z" fill="currentColor" />
-                  </svg>
-                </button>
-              )}
             </div>
             <div className="relative flex items-center gap-x-[16px] text-[var(--muted)]">
               <button
@@ -988,7 +981,7 @@ export default function SearchOverlay({
               </button>
             </div>
             </div>
-            {editing && Object.keys(editFilters).length > 0 && (
+            {showEditing && (
               <SearchFilters
                 dimensionsOnly
                 dark
