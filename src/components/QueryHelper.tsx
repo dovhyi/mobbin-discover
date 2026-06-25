@@ -12,37 +12,60 @@ const EXAMPLE_QUERIES = [
   "finance empty state",
 ];
 
-const STORAGE_KEY = "queryHelperDismissed_v2";
+// "0" = collapsed, anything else (incl. unset) = expanded.
+const STORAGE_KEY = "queryHelperOpen";
 
-function SparkIcon() {
+function SparkIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="shrink-0">
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className="shrink-0">
       <path d="M10 2l1.7 5L17 8.7l-5 1.6L10 16l-2-5.7L3 8.7l5.3-1.7L10 2z" fill="currentColor" />
     </svg>
   );
 }
 
 export default function QueryHelper({ onQueryClick }: { onQueryClick: (q: string) => void }) {
-  const [dismissed, setDismissed] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState(false);
 
-  // Respect a prior dismissal; otherwise reveal with a small entrance animation.
+  // Restore the last toggle state (default open).
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === "1") return;
-    setDismissed(false);
+    setOpen(localStorage.getItem(STORAGE_KEY) !== "0");
+    setReady(true);
+  }, []);
+
+  // Entrance animation for the expanded card.
+  useEffect(() => {
+    if (!open) {
+      setVisible(false);
+      return;
+    }
     const id = requestAnimationFrame(() =>
       requestAnimationFrame(() => setVisible(true)),
     );
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [open]);
 
-  const close = () => {
-    setVisible(false);
-    localStorage.setItem(STORAGE_KEY, "1");
-    setTimeout(() => setDismissed(true), 200);
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
   };
 
-  if (dismissed) return null;
+  if (!ready) return null;
+
+  // Collapsed → small launcher button in the corner.
+  if (!open) {
+    return (
+      <button
+        onClick={() => toggle(true)}
+        aria-label="Show example searches"
+        className="fixed right-[16px] top-[120px] z-40 hidden h-[40px] items-center gap-x-[8px] rounded-full border border-[var(--border)] bg-[var(--overlay)] pl-[14px] pr-[16px] text-[var(--foreground)] shadow-[0px_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-[24px] transition-colors hover:bg-[var(--surface)] min-[768px]:flex min-[1024px]:right-[24px] min-[1160px]:top-[80px]"
+      >
+        <SparkIcon />
+        <span className="text-[14px] font-semibold leading-[20px]">Try a search</span>
+      </button>
+    );
+  }
 
   return (
     <div
@@ -56,8 +79,8 @@ export default function QueryHelper({ onQueryClick }: { onQueryClick: (q: string
           <span className="text-[14px] font-semibold leading-[20px]">Try a search</span>
         </div>
         <button
-          onClick={close}
-          aria-label="Dismiss"
+          onClick={() => toggle(false)}
+          aria-label="Hide example searches"
           className="flex size-[24px] shrink-0 items-center justify-center rounded-full text-[var(--muted-strong)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--foreground)]"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
