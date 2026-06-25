@@ -1285,7 +1285,7 @@ export default function SearchOverlay({
           )}
 
           {showShortcuts && (
-            <div className="pointer-events-none absolute bottom-[16px] left-[24px] z-30 hidden flex-wrap items-center gap-x-[16px] gap-y-[4px] text-[12px] leading-[16px] text-[var(--muted)] min-[720px]:flex">
+            <div className="pointer-events-none absolute bottom-[16px] left-[24px] z-30 hidden flex-col items-start gap-y-[4px] text-[12px] leading-[16px] text-[var(--muted)] min-[720px]:flex">
               <span>⇥ Switch filters</span>
               <span>↑ ↓ Navigate</span>
               <span>↵ Select</span>

@@ -63,6 +63,17 @@ export const DIMENSIONS: Record<Experience, string[]> = {
   sites: ["Categories", "Sections", "Styles"],
 };
 
+// Screens/UI Elements and Flows are mutually exclusive content axes: a
+// selected Flow hides Screens & UI Elements, and vice versa.
+export function visibleDimensions(experience: Experience, filters: Filters): string[] {
+  if (experience === "sites") return DIMENSIONS.sites;
+  if ((filters["Flows"] || []).length) return ["Categories", "Flows"];
+  if ((filters["Screens"] || []).length || (filters["UI Elements"] || []).length) {
+    return ["Categories", "Screens", "UI Elements"];
+  }
+  return ["Categories", "Screens", "UI Elements", "Flows"];
+}
+
 export const SORTS = ["Trending", "Latest", "Most popular", "Top rated"];
 
 export type Filters = Record<string, string[]>;

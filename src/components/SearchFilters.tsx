@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  DIMENSIONS,
   FILTER_DATA,
   SORTS,
+  visibleDimensions,
   type Experience,
   type Filters,
   type Platform,
@@ -188,73 +188,132 @@ function DimensionChip({
   onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
-  const active = selected.length > 0;
   const groups = FILTER_DATA[experience][dimension] ?? [];
+  const active = selected.length > 0;
 
-  const label =
-    selected.length === 0
-      ? dimension
-      : selected.length === 1
-        ? selected[0]
-        : `${selected[0]} +${selected.length - 1}`;
+  useEffect(() => {
+    if (!open) setQ("");
+  }, [open]);
+
+  const clearAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClear();
+  };
+
+  const ql = q.trim().toLowerCase();
+  const filteredGroups = groups
+    .map((g) => ({ name: g.name, items: g.items.filter((it) => it.toLowerCase().includes(ql)) }))
+    .filter((g) => g.items.length > 0);
+
+  const renderOption = (value: string) => {
+    const on = selected.includes(value);
+    return (
+      <button
+        key={value}
+        onClick={() => onToggle(value)}
+        className="flex w-full items-center gap-x-[10px] rounded-[10px] px-[12px] py-[8px] text-left text-[15px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--fill)]"
+      >
+        <span
+          className={`flex size-[20px] shrink-0 items-center justify-center rounded-[6px] ${
+            on ? "bg-[var(--foreground)] text-[var(--background)]" : "bg-[var(--surface-hover)]"
+          }`}
+        >
+          {on && (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </span>
+        <span className="truncate">{value}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="shrink-0">
       <button
         ref={btnRef}
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-[40px] items-center gap-x-[6px] rounded-full text-[15px] font-medium transition-colors ${
+        className={`flex h-[40px] items-center gap-x-[8px] rounded-full text-[15px] transition-colors ${
           active
-            ? "bg-[var(--foreground)] pl-[16px] pr-[8px] font-semibold text-[var(--background)]"
-            : "bg-[var(--fill)] px-[16px] text-[var(--muted-strong)] hover:bg-[var(--fill-hover)]"
+            ? "border border-[var(--border-strong)] bg-[var(--background)] pl-[16px] pr-[8px] font-semibold text-[var(--foreground)]"
+            : "bg-[var(--fill)] px-[16px] font-medium text-[var(--muted-strong)] hover:bg-[var(--fill-hover)]"
         }`}
       >
-        <span className="max-w-[200px] truncate">{label}</span>
-        {active ? (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClear();
-            }}
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[var(--background)]/20 transition-opacity hover:opacity-80"
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </span>
+        {selected.length === 0 ? (
+          <>
+            <span>{dimension}</span>
+            <Chevron />
+          </>
+        ) : selected.length === 1 ? (
+          <>
+            <span className="max-w-[160px] truncate">{selected[0]}</span>
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={clearAll}
+              className="flex size-[18px] items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)]"
+            >
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </span>
+          </>
         ) : (
-          <Chevron />
+          <>
+            <span>{dimension}</span>
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={clearAll}
+              className="group/badge flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--foreground)] px-[5px] text-[11px] font-semibold text-[var(--background)]"
+            >
+              <span className="group-hover/badge:hidden">{selected.length}</span>
+              <span className="hidden group-hover/badge:flex">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+            </span>
+          </>
         )}
       </button>
 
-      <Dropdown open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={280}>
-        {groups.map((group, gi) => (
-          <div key={gi} className="mb-[4px]">
+      <Dropdown open={open} anchorRef={btnRef} onClose={() => setOpen(false)} width={300}>
+        <div className="mb-[4px] flex items-center gap-x-[8px] rounded-[10px] px-[12px] py-[8px]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={`Search ${dimension.toLowerCase()}`}
+            className="grow bg-transparent text-[15px] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none"
+          />
+        </div>
+        {selected.length > 0 && (
+          <>
+            {selected.map((v) => renderOption(v))}
+            <div className="my-[6px] h-px bg-[var(--border)]" />
+          </>
+        )}
+        {filteredGroups.map((group, gi) => (
+          <div key={gi}>
             {group.name && (
-              <div className="px-[12px] pb-[4px] pt-[8px] text-[13px] font-semibold text-[var(--muted)]">
+              <div className="px-[12px] pb-[4px] pt-[6px] text-[13px] font-semibold text-[var(--muted)]">
                 {group.name}
               </div>
             )}
-            {group.items.map((item) => {
-              const isOn = selected.includes(item);
-              return (
-                <button
-                  key={item}
-                  onClick={() => onToggle(item)}
-                  className={`flex w-full items-center gap-x-[8px] rounded-[10px] px-[12px] py-[8px] text-left text-[15px] transition-colors hover:bg-[var(--fill)] ${
-                    isOn ? "font-semibold text-[var(--foreground)]" : "text-[var(--muted-strong)]"
-                  }`}
-                >
-                  <span className="truncate">{item}</span>
-                  {isOn && <Check />}
-                </button>
-              );
-            })}
+            {group.items.map((item) => renderOption(item))}
           </div>
         ))}
+        {filteredGroups.length === 0 && selected.length === 0 && (
+          <div className="px-[12px] py-[8px] text-[14px] text-[var(--muted)]">No matches</div>
+        )}
       </Dropdown>
     </div>
   );
@@ -357,7 +416,7 @@ export default function SearchFilters({
         )}
 
         <div className="flex items-center gap-x-[10px]">
-          {DIMENSIONS[experience].map((dim) => (
+          {visibleDimensions(experience, filters).map((dim) => (
             <DimensionChip
               key={dim}
               experience={experience}
