@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import SearchOverlay from "@/components/SearchOverlay";
@@ -48,6 +48,18 @@ function SearchPageInner() {
   const pathname = usePathname();
   const params = useSearchParams();
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // CMD+K / Ctrl+K toggles the search modal.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   // The URL is the source of truth so re-searches (incl. from the modal) update.
   const experience: Experience = params.get("exp") === "sites" ? "sites" : "apps";

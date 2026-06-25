@@ -9,6 +9,18 @@ import {
 } from "@/components/AppCardsGrid";
 import type { Experience, Filters, Platform, ResultType } from "@/lib/search";
 
+function filterHref(experience: Experience, platform: Platform, dim: string, value: string) {
+  const p = new URLSearchParams();
+  if (experience === "sites") {
+    p.set("exp", "sites");
+  } else {
+    p.set("exp", "apps");
+    p.set("platform", platform);
+  }
+  p.set("f", `${dim}:${value}`);
+  return `/search?${p.toString()}`;
+}
+
 type Variant = "ios" | "web";
 type Lens = "ios" | "web" | "sites";
 
@@ -218,15 +230,15 @@ function Shelf({
   );
 }
 
-function WebMiniCard({ title, desc }: { title: string; desc: string }) {
+function WebMiniCard({ title, desc, href }: { title: string; desc: string; href?: string }) {
   return (
     <div className="group/cell flex flex-col gap-y-[12px]">
-      <a
-        href="#"
+      <Link
+        href={href ?? "#"}
         className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[20px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
         <div className="aspect-[16/10] w-[86%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
-      </a>
+      </Link>
       <div className="flex items-center gap-x-[8px]">
         <div className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[28%] bg-[var(--surface)]">
           <LoaderDots size={14} />
@@ -312,13 +324,30 @@ function ReachPanelBody({ target, type }: { target: Lens; type: ResultType }) {
   );
 }
 
-function DepthPanelBody({ block, variant }: { block: DepthBlock; variant: Variant }) {
+function DepthPanelBody({
+  block,
+  variant,
+  experience,
+  platform,
+}: {
+  block: DepthBlock;
+  variant: Variant;
+  experience: Experience;
+  platform: Platform;
+}) {
   if (block.variant === "similar") {
     return (
       <Shelf
         gridCols="min-[720px]:grid-cols-3"
         itemWidth="w-[82%]"
-        items={SIMILAR.map((c) => <WebMiniCard key={c.title} title={c.title} desc={c.desc} />)}
+        items={SIMILAR.map((c) => (
+          <WebMiniCard
+            key={c.title}
+            title={c.title}
+            desc={c.desc}
+            href={filterHref(experience, platform, "Categories", c.title)}
+          />
+        ))}
       />
     );
   }
@@ -389,7 +418,7 @@ export default function SearchResults({ experience, platform, type, filters, que
 
       {depth && (
         <InjectionPanel icon={<LockGlyph />} title={depth.title}>
-          <DepthPanelBody block={depth} variant={variant} />
+          <DepthPanelBody block={depth} variant={variant} experience={experience} platform={platform} />
         </InjectionPanel>
       )}
 

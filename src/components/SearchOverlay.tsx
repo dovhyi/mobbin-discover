@@ -262,25 +262,82 @@ function MenuCheck() {
   );
 }
 
-// Pull known filter values out of a free-text query (bounded, case-insensitive).
+// One query term can map (by synonym) to several filter values.
+const SYNONYMS: Record<string, { dim: string; value: string }[]> = {
+  popup: [{ dim: "UI Elements", value: "Dialog" }, { dim: "UI Elements", value: "Modal" }],
+  modal: [{ dim: "UI Elements", value: "Dialog" }, { dim: "UI Elements", value: "Modal" }],
+  dropdown: [{ dim: "UI Elements", value: "Menu" }],
+  "sign in": [{ dim: "Screens", value: "Login" }],
+  "sign up": [{ dim: "Screens", value: "Signup" }],
+  register: [{ dim: "Screens", value: "Signup" }],
+};
+
+const DIM_LABELS: Record<string, string> = {
+  Categories: "Category",
+  Screens: "Screen",
+  "UI Elements": "UI Element",
+  Flows: "Flow",
+  Sections: "Section",
+  Styles: "Style",
+};
+
+function DimIcon({ dim }: { dim: string }) {
+  if (dim === "Categories") return <CategoriesIcon />;
+  if (dim === "Screens" || dim === "Sections") return <ScreensIcon />;
+  if (dim === "UI Elements" || dim === "Styles") return <UIElementIcon />;
+  if (dim === "Flows") return <FlowIcon />;
+  return <SearchIcon />;
+}
+
+// Pull known filter values (and synonym matches) out of a free-text query.
+// Tracks how many distinct source terms matched so a single concept can be
+// shown as direct match rows while a multi-concept query collapses to one
+// extraction block.
 function extractFilters(query: string, exp: "apps" | "sites") {
-  const filters: Record<string, string[]> = {};
   let remaining = ` ${query.toLowerCase()} `;
+  const matches: { dim: string; value: string }[] = [];
+  const sources = new Set<string>();
+
   DIMENSIONS[exp].forEach((dim) => {
     FILTER_DATA[exp][dim].forEach((group) => {
       group.items.forEach((item) => {
         const il = ` ${item.toLowerCase()} `;
         if (remaining.includes(il)) {
-          (filters[dim] ||= []).push(item);
-          remaining = remaining.replace(il, " ");
+          matches.push({ dim, value: item });
+          sources.add(item.toLowerCase());
+          remaining = remaining.replace(il, "  ");
         }
       });
     });
   });
+
+  Object.entries(SYNONYMS).forEach(([kw, targets]) => {
+    if (remaining.includes(` ${kw} `)) {
+      const valid = targets.filter((t) => DIMENSIONS[exp].includes(t.dim));
+      if (valid.length) {
+        valid.forEach((t) => matches.push({ dim: t.dim, value: t.value }));
+        sources.add(kw);
+        remaining = remaining.replace(` ${kw} `, "  ");
+      }
+    }
+  });
+
+  const seen = new Set<string>();
+  const deduped = matches.filter((m) => {
+    const k = `${m.dim}|${m.value}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  const filters: Record<string, string[]> = {};
+  deduped.forEach((m) => (filters[m.dim] ||= []).push(m.value));
+
   const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "screen", "screens", "page", "that", "match"]);
   const words = remaining.split(/\s+/).filter((w) => w && !STOP.has(w));
   const leftover = words.join(" ");
-  return { filters, leftover, valuable: leftover.length >= 3 };
+
+  return { filters, leftover, valuable: leftover.length >= 3, matches: deduped, sourceCount: sources.size };
 }
 
 // Deterministic per-item count so the list looks populated without real data.
@@ -753,7 +810,7 @@ export default function SearchOverlay({
         className={`fixed inset-0 z-50 flex flex-col items-stretch transition-all duration-200 ease-out min-[720px]:inset-auto min-[720px]:top-[120px] min-[720px]:left-1/2 min-[720px]:w-[816px] min-[720px]:max-w-full min-[720px]:-translate-x-1/2 ${visible ? "opacity-100 min-[720px]:translate-y-0 min-[720px]:scale-100" : "opacity-0 min-[720px]:-translate-y-[16px] min-[720px]:scale-[0.98]"}`}
       >
         <div
-          className={`flex-1 overflow-hidden bg-[var(--background-elevated)] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[var(--overlay)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
+          className={`relative flex-1 overflow-hidden bg-[var(--background-elevated)] min-[720px]:max-h-[calc(100vh-240px)] min-[720px]:flex-none min-[720px]:rounded-[24px] min-[720px]:bg-[var(--overlay)] min-[720px]:shadow-[0px_12px_80px_rgba(0,0,0,0.16)] min-[720px]:backdrop-blur-[24px] ${
             hasQuery
               ? "grid grid-rows-[auto_1fr]"
               : "grid grid-rows-[auto_auto_1fr]"
@@ -810,25 +867,6 @@ export default function SearchOverlay({
               >
                 <SitesIcon />
               </button>
-
-              {showShortcuts && (
-                <div className="pointer-events-none absolute right-0 top-[calc(100%+10px)] z-30 hidden flex-col items-end gap-y-[6px] min-[720px]:flex">
-                  {([["iOS", "1"], ["Web", "2"], ["Sites", "3"]] as const).map(([label, num]) => (
-                    <div
-                      key={num}
-                      className="flex items-center gap-x-[8px] rounded-[8px] bg-[var(--overlay)] py-[4px] pl-[8px] pr-[4px] shadow-[0px_12px_30px_rgba(0,0,0,0.5)] backdrop-blur-[24px]"
-                    >
-                      <span className="whitespace-nowrap text-[12px] font-medium leading-[16px] tracking-[0.2px] text-[var(--foreground)]">
-                        Filter by {label}
-                      </span>
-                      <span className="flex items-center gap-x-[2px]">
-                        <kbd className="flex h-[20px] w-[20px] items-center justify-center rounded-[4px] bg-[var(--surface-hover)] text-[11px] font-medium text-[var(--muted-strong)]">⌥</kbd>
-                        <kbd className="flex h-[20px] w-[20px] items-center justify-center rounded-[4px] bg-[var(--surface-hover)] text-[11px] font-medium text-[var(--muted-strong)]">{num}</kbd>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
               {/* Mobile cancel button */}
               <button
                 onClick={onClose}
@@ -1058,7 +1096,34 @@ export default function SearchOverlay({
             <section className="overflow-hidden">
               <div className="h-full overflow-y-auto px-[20px] pb-[20px] pt-[8px]">
                 <div className="flex flex-col gap-y-[12px]">
-                  {/* Mode-aware action row (index 0) */}
+                  {/* Single concept → direct filter match rows */}
+                  {mode === "extract" && extracted.sourceCount <= 1 && extracted.matches.length > 0 ? (
+                    extracted.matches.map((m, i) => (
+                      <div
+                        key={`${m.dim}-${m.value}`}
+                        ref={
+                          i === 0
+                            ? (el: HTMLDivElement | null) => {
+                                if (el) rowRefs.current.set(0, el);
+                                else rowRefs.current.delete(0);
+                              }
+                            : undefined
+                        }
+                        onClick={() => goFilter(m.dim, m.value)}
+                        className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors ${
+                          i === 0 && selectedIndex === 0 ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
+                        }`}
+                      >
+                        <div className="flex size-[40px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--fill)]">
+                          <DimIcon dim={m.dim} />
+                        </div>
+                        <div className="flex grow flex-col overflow-hidden">
+                          <span className="truncate text-[16px] font-semibold leading-[24px]">{m.value}</span>
+                          <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{DIM_LABELS[m.dim]}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
                   <div
                     ref={(el: HTMLDivElement | null) => {
                       if (el) rowRefs.current.set(0, el);
@@ -1133,6 +1198,7 @@ export default function SearchOverlay({
                       )}
                     </div>
                   </div>
+                  )}
 
                   {results ? (
                     <>
@@ -1216,6 +1282,15 @@ export default function SearchOverlay({
                 </div>
               </div>
             </section>
+          )}
+
+          {showShortcuts && (
+            <div className="pointer-events-none absolute bottom-[16px] left-[24px] z-30 hidden flex-wrap items-center gap-x-[16px] gap-y-[4px] text-[12px] leading-[16px] text-[var(--muted)] min-[720px]:flex">
+              <span>⇥ Switch filters</span>
+              <span>↑ ↓ Navigate</span>
+              <span>↵ Select</span>
+              <span>⌥1 / ⌥2 / ⌥3 — iOS · Web · Sites</span>
+            </div>
           )}
         </div>
       </div>

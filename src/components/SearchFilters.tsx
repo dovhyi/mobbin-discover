@@ -170,7 +170,7 @@ function ExperienceDropdown({ value, onChange }: { value: Experience; onChange: 
 }
 
 function Divider() {
-  return <div className="h-[24px] w-px shrink-0 bg-[var(--border)]" />;
+  return <div className="mx-[12px] h-[24px] w-px shrink-0 bg-[var(--border)]" />;
 }
 
 /* ── Dimension dropdown chip ── */
@@ -340,7 +340,7 @@ export default function SearchFilters({
 
   return (
     <div className="flex items-center gap-x-[16px]">
-      <div className="scrollbar-none flex min-w-0 grow items-center gap-x-[10px] overflow-x-auto">
+      <div className="scrollbar-none flex min-w-0 grow items-center overflow-x-auto">
         <ExperienceDropdown value={experience} onChange={onExperienceChange} />
 
         <Divider />
@@ -356,24 +356,26 @@ export default function SearchFilters({
           </>
         )}
 
-        {DIMENSIONS[experience].map((dim) => (
-          <DimensionChip
-            key={dim}
-            experience={experience}
-            dimension={dim}
-            selected={filters[dim] ?? []}
-            onToggle={(value) => onToggleFilter(dim, value)}
-            onClear={() => onClearDim(dim)}
-          />
-        ))}
+        <div className="flex items-center gap-x-[10px]">
+          {DIMENSIONS[experience].map((dim) => (
+            <DimensionChip
+              key={dim}
+              experience={experience}
+              dimension={dim}
+              selected={filters[dim] ?? []}
+              onToggle={(value) => onToggleFilter(dim, value)}
+              onClear={() => onClearDim(dim)}
+            />
+          ))}
 
-        {hasActive && (
-          <IconButton label="Reset filters" onClick={onReset}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M3 9a6 6 0 1 0 1.8-4.3M3 3v2.7h2.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </IconButton>
-        )}
+          {hasActive && (
+            <IconButton label="Reset filters" onClick={onReset}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9a6 6 0 1 0 1.8-4.3M3 3v2.7h2.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </IconButton>
+          )}
+        </div>
       </div>
 
       <div className="hidden shrink-0 items-center gap-x-[16px] min-[900px]:flex">
