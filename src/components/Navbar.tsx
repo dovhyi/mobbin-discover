@@ -14,7 +14,7 @@ interface NavbarProps {
 
 function BellIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 20 20" fill="none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
       <path fillRule="evenodd" clipRule="evenodd" d="M10 3C11.6569 3 13 4.34315 13 6V9.33301L13.2002 9.59961L16 13.332V14H12.2361H7.76389H4V13.332L6.7998 9.59961L7 9.33301V6C7 4.34315 8.34315 3 10 3ZM7 16H2V12.667L2.2002 12.4004L5 8.66699V6C5 3.23858 7.23858 1 10 1C12.7614 1 15 3.23858 15 6V8.66699L17.7998 12.4004L18 12.667V16H13C13 17.6569 11.6569 19 10 19C8.34315 19 7 17.6569 7 16Z" fill="currentColor" />
     </svg>
   );
