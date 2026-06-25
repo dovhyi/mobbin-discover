@@ -108,7 +108,7 @@ export function BrandBanner({ brand }: { brand: Brand }) {
 export function BrandCard({ brand }: { brand: Brand }) {
   return (
     <div
-      className="theme-dark flex min-w-0 flex-col gap-[24px] self-start overflow-hidden rounded-[24px] p-[24px]"
+      className="theme-dark flex min-w-0 flex-col gap-[24px] overflow-hidden rounded-[24px] p-[24px]"
       style={bg(brand.color)}
     >
       {/* Header */}
@@ -144,12 +144,12 @@ export function BrandCard({ brand }: { brand: Brand }) {
         </div>
       </div>
 
-      {/* Screenshot strip (bleeds to the right edge, scrolls) */}
-      <div className="scrollbar-none -mr-[24px] flex min-w-0 gap-[12px] overflow-x-auto pr-[24px]">
+      {/* Screenshot strip (bleeds to the right edge, scrolls; stretches to fill). */}
+      <div className="scrollbar-none -mr-[24px] flex min-h-[260px] min-w-0 flex-1 gap-[12px] overflow-x-auto pr-[24px]">
         {brand.screens.map((src, i) => (
           <div
             key={i}
-            className="aspect-[1180/2676] h-[260px] shrink-0 overflow-hidden rounded-[16px] border-[0.5px] border-[rgba(255,255,255,0.12)]"
+            className="aspect-[1180/2676] h-full shrink-0 overflow-hidden rounded-[16px] border-[0.5px] border-[rgba(255,255,255,0.12)]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={`${brand.name} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
