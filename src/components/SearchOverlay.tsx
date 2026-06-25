@@ -631,6 +631,16 @@ export default function SearchOverlay({
   const mode: SearchMode = modeOverride ?? autoMode;
   const extractSummary = Object.values(extracted.filters).flat().join(" · ");
   const extractCount = Object.values(extracted.filters).flat().length;
+  // Direct filter-match rows only when a single concept matched and there's no
+  // meaningful leftover query. With leftover (e.g. "dashboard finance"), fall to
+  // the extract row which applies the filter AND keeps the leftover query.
+  const directMatch =
+    mode === "extract" &&
+    extracted.sourceCount <= 1 &&
+    extracted.matches.length > 0 &&
+    !extracted.valuable;
+  // Number of selectable rows above the results list (for arrow-key nav).
+  const topCount = directMatch ? extracted.matches.length + 1 : 1;
 
   const runSearch = useCallback(() => {
     const params: Record<string, string> = { exp: expSlug };
@@ -660,6 +670,22 @@ export default function SearchOverlay({
     if (f) params.f = f;
     navigate(params);
   }, [expSlug, selExp, selPlatform, navigate, query, editFilters]);
+
+  // Activate whichever top row is currently highlighted (Enter / click).
+  const activateSelected = useCallback(() => {
+    if (directMatch) {
+      if (selectedIndex < extracted.matches.length) {
+        const m = extracted.matches[selectedIndex];
+        goFilter(m.dim, m.value);
+        return;
+      }
+      if (selectedIndex === extracted.matches.length) {
+        runPlainSearch();
+        return;
+      }
+    }
+    runSearch();
+  }, [directMatch, selectedIndex, extracted, goFilter, runPlainSearch, runSearch]);
 
   // Begin editing (back arrow / Esc returns to the default modal view).
   const wasOpen = useRef(false);
@@ -736,8 +762,8 @@ export default function SearchOverlay({
   // Build flat list of total navigable items for arrow key navigation
   const totalItems = useMemo(() => {
     if (!hasQuery) return 0;
-    // Index 0: Free text search
-    let count = 1;
+    // The top rows (free-text search, or filter matches + plain search).
+    let count = topCount;
     if (results) {
       count += results.topResults.length;
       count += results.other.length;
@@ -750,12 +776,12 @@ export default function SearchOverlay({
     // Request app row
     count += 1;
     return count;
-  }, [hasQuery, results]);
+  }, [hasQuery, results, topCount]);
 
   // Compute start indices for each group to map selectedIndex to rows
   const groupStartIndices = useMemo(() => {
-    if (!results) return { topResults: 1, other: 2, ios: 2, sites: 2, requestApp: 2 };
-    let idx = 1; // after free text search (0)
+    if (!results) return { topResults: topCount, other: topCount, ios: topCount, sites: topCount, requestApp: topCount + 1 };
+    let idx = topCount; // after the top rows
     const topResults = idx;
     idx += results.topResults.length;
     const other = idx;
@@ -766,7 +792,7 @@ export default function SearchOverlay({
     idx += results.sites.length;
     const requestApp = idx;
     return { topResults, other, ios, sites, requestApp };
-  }, [results]);
+  }, [results, topCount]);
 
   // Reset selection when query changes
   useEffect(() => {
@@ -919,7 +945,7 @@ export default function SearchOverlay({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    runSearch();
+                    activateSelected();
                   }
                 }}
               />
@@ -1201,23 +1227,19 @@ export default function SearchOverlay({
             <section className="overflow-hidden">
               <div className="h-full overflow-y-auto px-[20px] pb-[20px] pt-[8px]">
                 <div className="flex flex-col gap-y-[12px]">
-                  {/* Single concept → direct filter match rows */}
-                  {mode === "extract" && extracted.sourceCount <= 1 && extracted.matches.length > 0 ? (
+                  {/* Single concept (no leftover query) → direct filter match rows */}
+                  {directMatch ? (
                     <>
                     {extracted.matches.map((m, i) => (
                       <div
                         key={`${m.dim}-${m.value}`}
-                        ref={
-                          i === 0
-                            ? (el: HTMLDivElement | null) => {
-                                if (el) rowRefs.current.set(0, el);
-                                else rowRefs.current.delete(0);
-                              }
-                            : undefined
-                        }
+                        ref={(el: HTMLDivElement | null) => {
+                          if (el) rowRefs.current.set(i, el);
+                          else rowRefs.current.delete(i);
+                        }}
                         onClick={() => goFilter(m.dim, m.value)}
                         className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors ${
-                          i === 0 && selectedIndex === 0 ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
+                          selectedIndex === i ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
                         }`}
                       >
                         <div className="flex size-[40px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--fill)]">
@@ -1231,8 +1253,15 @@ export default function SearchOverlay({
                     ))}
                     {/* Always allow a plain keyword search, even when filters match. */}
                     <div
+                      ref={(el: HTMLDivElement | null) => {
+                        const idx = extracted.matches.length;
+                        if (el) rowRefs.current.set(idx, el);
+                        else rowRefs.current.delete(idx);
+                      }}
                       onClick={runPlainSearch}
-                      className="flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors hover:bg-[var(--fill)]"
+                      className={`flex h-[56px] cursor-pointer items-center gap-x-[12px] rounded-[16px] px-[8px] text-[var(--foreground)] transition-colors ${
+                        selectedIndex === extracted.matches.length ? "bg-[var(--fill)]" : "hover:bg-[var(--fill)]"
+                      }`}
                     >
                       <div className="flex size-[40px] shrink-0 items-center justify-center rounded-[12px] bg-[var(--fill)]">
                         <SearchIcon />
@@ -1259,10 +1288,17 @@ export default function SearchOverlay({
                     </div>
                     <div className="flex grow flex-col overflow-hidden">
                       <span className="truncate text-[16px] font-semibold leading-[24px]">
-                        {mode === "deep" ? "Deep Search" : query}
+                        {mode === "deep"
+                          ? "Deep Search"
+                          : mode === "extract" && extracted.valuable && extracted.leftover
+                            ? extracted.leftover
+                            : query}
                       </span>
                       {mode === "deep" && (
                         <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">{query}</span>
+                      )}
+                      {mode === "extract" && extractSummary && (
+                        <span className="truncate text-[14px] leading-[20px] text-[var(--muted-strong)]">in {extractSummary}</span>
                       )}
                     </div>
 
@@ -1380,10 +1416,11 @@ export default function SearchOverlay({
                           name: `"${query}"`,
                           description: "Text in Screenshot",
                         }}
-                        selected={selectedIndex === 1}
+                        selected={selectedIndex === groupStartIndices.topResults}
                         rowRef={(el: HTMLDivElement | null) => {
-                          if (el) rowRefs.current.set(1, el);
-                          else rowRefs.current.delete(1);
+                          const idx = groupStartIndices.topResults;
+                          if (el) rowRefs.current.set(idx, el);
+                          else rowRefs.current.delete(idx);
                         }}
                       />
                     </div>

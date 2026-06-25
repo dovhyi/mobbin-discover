@@ -14,7 +14,7 @@ import {
   siteScreens,
   type RealScreen,
 } from "@/data/mobbinScreens";
-import { brandFor } from "@/data/brands";
+import { brandFor, type Brand } from "@/data/brands";
 import { BrandBanner, BrandCard } from "@/components/BrandSpotlight";
 import type { Experience, Filters, Platform, ResultType } from "@/lib/search";
 
@@ -302,12 +302,14 @@ function ResultGrid({
   count,
   screens = [],
   sites = false,
+  brand = null,
 }: {
   type: ResultType;
   variant: Variant;
   count: number;
   screens?: RealScreen[];
   sites?: boolean;
+  brand?: Brand | null;
 }) {
   if (type === "flows") {
     return (
@@ -341,6 +343,11 @@ function ResultGrid({
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[40px] ${cols}`}>
+      {brand && (
+        <div className="col-span-full">
+          <BrandCard brand={brand} />
+        </div>
+      )}
       {Array.from({ length: count }).map((_, i) =>
         screens[i] ? (
           <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={variant} sites={sites} />
@@ -465,9 +472,18 @@ export default function SearchResults({ experience, platform, type, filters, que
 
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
-      {brand && (type === "apps" ? <BrandCard brand={brand} /> : <BrandBanner brand={brand} />)}
+      {/* Brand banner sits above screen/flow results; the brand card is the
+          first cell inside the apps grid. */}
+      {brand && type !== "apps" && <BrandBanner brand={brand} />}
 
-      <ResultGrid type={type} variant={variant} count={b1} screens={firstRowScreens} sites={sites} />
+      <ResultGrid
+        type={type}
+        variant={variant}
+        count={b1}
+        screens={firstRowScreens}
+        sites={sites}
+        brand={type === "apps" ? brand : null}
+      />
 
       {reach && (
         <InjectionPanel
