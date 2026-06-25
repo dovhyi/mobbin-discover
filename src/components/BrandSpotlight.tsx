@@ -110,9 +110,7 @@ export function BrandCard({ brand, variant = "ios" }: { brand: Brand; variant?: 
   const screens = isWeb ? brand.screensWeb : brand.screens;
   return (
     <div
-      className={`theme-dark flex min-w-0 flex-col gap-[24px] overflow-hidden rounded-[24px] p-[24px] ${
-        isWeb ? "self-start" : ""
-      }`}
+      className="theme-dark flex min-w-0 flex-col gap-[24px] self-start overflow-hidden rounded-[24px] p-[24px]"
       style={bg(brand.color)}
     >
       {/* Header */}
@@ -148,18 +146,14 @@ export function BrandCard({ brand, variant = "ios" }: { brand: Brand; variant?: 
         </div>
       </div>
 
-      {/* Screenshot strip (bleeds to the right edge, scrolls). iOS phones stretch
-          to fill the card height; web screens are landscape at a fixed height. */}
-      <div
-        className={`scrollbar-none -mr-[24px] flex min-w-0 gap-[12px] overflow-x-auto pr-[24px] ${
-          isWeb ? "" : "min-h-[260px] flex-1"
-        }`}
-      >
+      {/* Screenshot strip (bleeds to the right edge, scrolls). Fixed heights so
+          the shots roughly match the neighbouring app card and never balloon. */}
+      <div className="scrollbar-none -mr-[24px] flex min-w-0 gap-[12px] overflow-x-auto pr-[24px]">
         {screens.map((src, i) => (
           <div
             key={i}
             className={`shrink-0 overflow-hidden rounded-[16px] border-[0.5px] border-[rgba(255,255,255,0.12)] ${
-              isWeb ? "aspect-[16/10] h-[200px]" : "aspect-[1180/2676] h-full"
+              isWeb ? "aspect-[16/10] h-[200px]" : "aspect-[1180/2676] h-[380px]"
             }`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
