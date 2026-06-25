@@ -41,6 +41,18 @@ function activeLens(experience: Experience, platform: Platform): Lens {
 }
 
 const LENS_LABEL: Record<Lens, string> = { ios: "iOS Apps", web: "Web Apps", sites: "Sites" };
+
+// Label that reflects the result granularity (screens/flows), not just apps —
+// e.g. "iOS screens with Empty State in Finance" rather than "iOS Apps ...".
+function lensLabel(lens: Lens, type: ResultType): string {
+  if (type === "screens") {
+    return lens === "ios" ? "iOS screens" : lens === "web" ? "Web screens" : "Site sections";
+  }
+  if (type === "flows") {
+    return lens === "ios" ? "iOS flows" : lens === "web" ? "Web flows" : "Site flows";
+  }
+  return LENS_LABEL[lens];
+}
 const LENS_VARIANT: Record<Lens, Variant> = { ios: "ios", web: "web", sites: "web" };
 // Strongest non-active platform first (one block per type — pick the top).
 const REACH_ORDER: Record<Lens, Lens[]> = {
@@ -96,24 +108,26 @@ interface ReachBlock {
   title: string;
   target: Lens;
   href: string;
+  action: string;
 }
 
-function reachBlock(lens: Lens, filters: Filters, query: string): ReachBlock | null {
+function reachBlock(lens: Lens, filters: Filters, query: string, type: ResultType): ReachBlock | null {
   const target = REACH_ORDER[lens][0];
   const cat = filters["Categories"]?.[0];
   const sub = subValue(filters);
+  const label = lensLabel(target, type);
   let title: string | null = null;
-  if (query) title = `${LENS_LABEL[target]} that match "${query}"`;
-  else if (cat && sub) title = `${LENS_LABEL[target]} with ${sub} in ${cat}`;
-  else if (cat) title = `${LENS_LABEL[target]} in ${cat}`;
-  else if (sub) title = `${LENS_LABEL[target]} with ${sub}`;
+  if (query) title = `${label} that match "${query}"`;
+  else if (cat && sub) title = `${label} with ${sub} in ${cat}`;
+  else if (cat) title = `${label} in ${cat}`;
+  else if (sub) title = `${label} with ${sub}`;
   if (!title) return null;
-  return { title, target, href: reachHref(target, filters, query) };
+  return { title, target, href: reachHref(target, filters, query), action: `View ${label}` };
 }
 
 type DepthBlock =
-  | { variant: "similar"; title: string }
-  | { variant: "shelf"; title: string; cardKind: "screen" | "flow" | "web" };
+  | { variant: "similar"; title: string; action: string; filters: Filters }
+  | { variant: "shelf"; title: string; cardKind: "screen" | "flow" | "web"; action: string; filters: Filters };
 
 function depthBlock(filters: Filters): DepthBlock | null {
   const cat = filters["Categories"]?.[0];
@@ -125,16 +139,29 @@ function depthBlock(filters: Filters): DepthBlock | null {
 
   // Priority 2 — category depth (similar categories OR a trending flow, never both).
   if (cat) {
-    if (screen || ui || flow) return { variant: "shelf", title: `Onboarding in ${cat}`, cardKind: "flow" };
-    return { variant: "similar", title: `Categories similar to "${cat}"` };
+    if (screen || ui || flow)
+      return { variant: "shelf", title: `Onboarding in ${cat}`, cardKind: "flow", action: "View flows", filters: { Flows: ["Onboarding"], Categories: [cat] } };
+    return { variant: "similar", title: `Categories similar to "${cat}"`, action: "View categories", filters: { Categories: [cat] } };
   }
   // Priority 3 — filter-dimension breadth.
-  if (screen) return { variant: "shelf", title: `${screen} in ${adjacentCategory()}`, cardKind: "screen" };
-  if (flow) return { variant: "shelf", title: `${flow} in ${adjacentCategory()}`, cardKind: "flow" };
-  if (ui) return { variant: "shelf", title: `${ui} across categories`, cardKind: "screen" };
-  if (section) return { variant: "shelf", title: `${section} across sites`, cardKind: "web" };
-  if (style) return { variant: "shelf", title: `${style} across sites`, cardKind: "web" };
+  const adj = adjacentCategory();
+  if (screen) return { variant: "shelf", title: `${screen} in ${adj}`, cardKind: "screen", action: "View screens", filters: { Screens: [screen], Categories: [adj] } };
+  if (flow) return { variant: "shelf", title: `${flow} in ${adj}`, cardKind: "flow", action: "View flows", filters: { Flows: [flow], Categories: [adj] } };
+  if (ui) return { variant: "shelf", title: `${ui} across categories`, cardKind: "screen", action: "View screens", filters: { "UI Elements": [ui] } };
+  if (section) return { variant: "shelf", title: `${section} across sites`, cardKind: "web", action: "View sites", filters: { Sections: [section] } };
+  if (style) return { variant: "shelf", title: `${style} across sites`, cardKind: "web", action: "View sites", filters: { Styles: [style] } };
   return null;
+}
+
+// Link to the SRP with the depth block's filters applied (same lens).
+function depthHref(lens: Lens, filters: Filters) {
+  const p = new URLSearchParams();
+  const { exp, platform } = lensParams(lens);
+  p.set("exp", exp);
+  if (platform) p.set("platform", platform);
+  const f = encodeFilters(filters);
+  if (f) p.set("f", f);
+  return `/search?${p.toString()}`;
 }
 
 /* ── UI pieces ── */
@@ -420,7 +447,7 @@ export default function SearchResults({ experience, platform, type, filters, que
 
   // Empty state injects nothing.
   const injecting = query.length > 0 || hasFilters(filters);
-  const reach = injecting ? reachBlock(lens, filters, query) : null;
+  const reach = injecting ? reachBlock(lens, filters, query, type) : null;
   const depth = injecting ? depthBlock(filters) : null;
 
   // Batch sizes so reach lands ~row 3 and depth ~row 6.
@@ -446,7 +473,7 @@ export default function SearchResults({ experience, platform, type, filters, que
         <InjectionPanel
           icon={lensGlyph(reach.target)}
           title={reach.title}
-          action={`View ${LENS_LABEL[reach.target]}`}
+          action={reach.action}
           href={reach.href}
         >
           <ReachPanelBody target={reach.target} type={type} />
@@ -456,7 +483,12 @@ export default function SearchResults({ experience, platform, type, filters, que
       <ResultGrid type={type} variant={variant} count={b2} />
 
       {depth && (
-        <InjectionPanel icon={<LockGlyph />} title={depth.title}>
+        <InjectionPanel
+          icon={<LockGlyph />}
+          title={depth.title}
+          action={depth.action}
+          href={depthHref(lens, depth.filters)}
+        >
           <DepthPanelBody block={depth} variant={variant} experience={experience} platform={platform} />
         </InjectionPanel>
       )}
