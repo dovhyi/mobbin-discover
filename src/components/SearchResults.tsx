@@ -6,7 +6,14 @@ import {
   FlowCard,
   LoaderDots,
   PlaceholderCard,
+  RealAppCard,
 } from "@/components/AppCardsGrid";
+import {
+  iosAppScreens,
+  webAppScreens,
+  siteScreens,
+  type RealScreen,
+} from "@/data/mobbinScreens";
 import type { Experience, Filters, Platform, ResultType } from "@/lib/search";
 
 function filterHref(experience: Experience, platform: Platform, dim: string, value: string) {
@@ -260,7 +267,19 @@ const SIMILAR = [
 
 /* ── Result grids ── */
 
-function ResultGrid({ type, variant, count }: { type: ResultType; variant: Variant; count: number }) {
+function ResultGrid({
+  type,
+  variant,
+  count,
+  screens = [],
+  sites = false,
+}: {
+  type: ResultType;
+  variant: Variant;
+  count: number;
+  screens?: RealScreen[];
+  sites?: boolean;
+}) {
   if (type === "flows") {
     return (
       <div className="flex flex-col gap-y-[48px]">
@@ -277,9 +296,13 @@ function ResultGrid({ type, variant, count }: { type: ResultType; variant: Varia
         : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
     return (
       <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
-        {Array.from({ length: count }).map((_, i) => (
-          <BareScreenCard key={i} variant={variant} />
-        ))}
+        {Array.from({ length: count }).map((_, i) =>
+          screens[i] ? (
+            <BareScreenCard key={`r-${screens[i].app}`} variant={variant} screen={screens[i]} />
+          ) : (
+            <BareScreenCard key={i} variant={variant} />
+          ),
+        )}
       </div>
     );
   }
@@ -289,9 +312,13 @@ function ResultGrid({ type, variant, count }: { type: ResultType; variant: Varia
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[40px] ${cols}`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <PlaceholderCard key={i} variant={variant} />
-      ))}
+      {Array.from({ length: count }).map((_, i) =>
+        screens[i] ? (
+          <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={variant} sites={sites} />
+        ) : (
+          <PlaceholderCard key={i} variant={variant} />
+        ),
+      )}
     </div>
   );
 }
@@ -399,9 +426,14 @@ export default function SearchResults({ experience, platform, type, filters, que
   const b2 = type === "flows" ? 3 : variant === "ios" ? (type === "screens" ? 10 : 12) : 9;
   const b3 = type === "flows" ? 2 : variant === "ios" ? (type === "screens" ? 5 : 8) : 6;
 
+  // Real Mobbin screens populate the first results section (one row).
+  const sites = experience === "sites";
+  const firstRowScreens: RealScreen[] =
+    type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
+
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
-      <ResultGrid type={type} variant={variant} count={b1} />
+      <ResultGrid type={type} variant={variant} count={b1} screens={firstRowScreens} sites={sites} />
 
       {reach && (
         <InjectionPanel

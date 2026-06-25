@@ -3,6 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import {
+  iosAppScreens,
+  webAppScreens,
+  siteScreens,
+  type RealScreen,
+} from "@/data/mobbinScreens";
 
 type Experience = "Apps" | "Sites";
 type Platform = "iOS" | "Web";
@@ -201,14 +207,17 @@ function PlaceholderInfo() {
   );
 }
 
-function CompactLabel() {
+function CompactLabel({ label, color }: { label?: string; color?: string }) {
   return (
     <div className="pointer-events-none flex items-center gap-x-[8px]">
-      <div className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-[28%] bg-[var(--surface)]">
-        <LoaderDots size={13} />
+      <div
+        className="flex h-[24px] w-[24px] shrink-0 items-center justify-center overflow-hidden rounded-[28%] bg-[var(--surface)]"
+        style={color ? { backgroundColor: color } : undefined}
+      >
+        {!color && <LoaderDots size={13} />}
       </div>
-      <span className="text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
-        App
+      <span className="truncate text-[16px] font-semibold leading-[24px] tracking-[0.144px] text-[var(--foreground)]">
+        {label ?? "App"}
       </span>
     </div>
   );
@@ -243,7 +252,29 @@ function BrowserFrame() {
 
 /* ── Card variants ── */
 
-function WebCard({ app }: { app: WebApp }) {
+function WebCard({ app, screen }: { app?: WebApp; screen?: RealScreen }) {
+  if (screen) {
+    return (
+      <div className="group/cell relative flex flex-col gap-y-[16px]">
+        <a
+          href={screen.href}
+          target="_blank"
+          rel="noreferrer"
+          className="relative block aspect-square overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
+        >
+          <div className="flex size-full items-center justify-center">
+            <div className="relative w-[81.7%] overflow-hidden rounded-[10px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={screen.src} alt={`${screen.app} screenshot`} loading="lazy" className="w-full object-cover" />
+              <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
+            </div>
+          </div>
+        </a>
+        <AppInfo name={screen.app} description={screen.description} logoColor={screen.logoColor} />
+      </div>
+    );
+  }
+  if (!app) return null;
   return (
     <div className="group/cell relative flex flex-col gap-y-[16px]">
       <a
@@ -273,33 +304,64 @@ function WebCard({ app }: { app: WebApp }) {
   );
 }
 
-function MobileCard({ app }: { app: MobileApp }) {
+function MobileCard({ app, screen }: { app?: MobileApp; screen?: RealScreen }) {
+  const name = screen?.app ?? app?.name ?? "";
+  const description = screen?.description ?? app?.description ?? "";
+  const logoColor = screen?.logoColor ?? app?.logoColor;
   return (
     <div className="group/cell relative flex flex-col gap-y-[16px]">
       <a
-        href="#"
+        href={screen?.href ?? "#"}
+        target={screen ? "_blank" : undefined}
+        rel={screen ? "noreferrer" : undefined}
         className="relative flex aspect-[3/5] items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
-        <PhoneFrame />
-        <CornerBadge label={app.badge} />
+        {screen ? (
+          <div className="aspect-[9/19] h-[80%] overflow-hidden rounded-[24px] bg-[var(--background-elevated)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={screen.src} alt={`${name} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
+          </div>
+        ) : (
+          <PhoneFrame />
+        )}
+        {!screen && app && <CornerBadge label={app.badge} />}
       </a>
-      <AppInfo name={app.name} description={app.description} logoColor={app.logoColor} />
+      <AppInfo name={name} description={description} logoColor={logoColor} />
     </div>
   );
 }
 
-function SiteCard({ site }: { site: Site }) {
+function SiteCard({ site, screen }: { site?: Site; screen?: RealScreen }) {
+  const name = screen?.app ?? site?.name ?? "";
+  const description = screen?.description ?? site?.description ?? "";
+  const logoColor = screen?.logoColor ?? site?.logoColor;
   return (
     <div className="group/cell relative flex flex-col gap-y-[16px]">
       <a
-        href="#"
+        href={screen?.href ?? "#"}
+        target={screen ? "_blank" : undefined}
+        rel={screen ? "noreferrer" : undefined}
         className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[28px] bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]"
       >
-        <BrowserFrame />
+        {screen ? (
+          <div className="relative aspect-[16/10] w-[84%] overflow-hidden rounded-[10px] bg-[var(--background-elevated)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={screen.src} alt={`${name} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
+            <div className="pointer-events-none absolute inset-0 rounded-[10px] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)]" />
+          </div>
+        ) : (
+          <BrowserFrame />
+        )}
       </a>
-      <AppInfo name={site.name} description={site.description} logoColor={site.logoColor} />
+      <AppInfo name={name} description={description} logoColor={logoColor} />
     </div>
   );
+}
+
+// Real app/site result card, picking the right layout for the active lens.
+export function RealAppCard({ screen, variant, sites }: { screen: RealScreen; variant: "ios" | "web"; sites?: boolean }) {
+  if (sites) return <SiteCard screen={screen} />;
+  return variant === "ios" ? <MobileCard screen={screen} /> : <WebCard screen={screen} />;
 }
 
 export function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
@@ -320,16 +382,23 @@ export function PlaceholderCard({ variant }: { variant: "ios" | "web" }) {
 }
 
 // Bare screen (no chrome) — used by the Screens / UI Elements filters.
-export function BareScreenCard({ variant }: { variant: "ios" | "web" }) {
+export function BareScreenCard({ variant, screen }: { variant: "ios" | "web"; screen?: RealScreen }) {
   const aspect = variant === "ios" ? "aspect-[9/19]" : "aspect-[16/10]";
   const rounded = variant === "ios" ? "rounded-[28px]" : "rounded-[16px]";
   return (
     <div className="group/cell flex flex-col gap-y-[12px]">
       <a
-        href="#"
-        className={`block ${aspect} ${rounded} bg-[var(--card)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]`}
-      />
-      <CompactLabel />
+        href={screen?.href ?? "#"}
+        target={screen ? "_blank" : undefined}
+        rel={screen ? "noreferrer" : undefined}
+        className={`block overflow-hidden ${aspect} ${rounded} bg-[var(--card)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)] transition-colors duration-300 group-hover/cell:bg-[var(--card-hover)]`}
+      >
+        {screen && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={screen.src} alt={`${screen.app} screenshot`} loading="lazy" className="h-full w-full object-cover object-top" />
+        )}
+      </a>
+      {screen ? <CompactLabel label={screen.app} color={screen.logoColor} /> : <CompactLabel />}
     </div>
   );
 }
@@ -372,15 +441,31 @@ const categoryGridCols = (variant: "ios" | "web") =>
     ? "grid-cols-1 min-[720px]:grid-cols-4"
     : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
 
-function CategorySection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
+function CategorySection({
+  name,
+  variant,
+  href,
+  screens = [],
+  sites = false,
+}: {
+  name: string;
+  variant: "ios" | "web";
+  href?: string;
+  screens?: RealScreen[];
+  sites?: boolean;
+}) {
   const count = variant === "ios" ? 4 : 3;
   return (
     <div className="group/section flex flex-col gap-y-[20px] min-[720px]:gap-y-[24px]">
       <SectionHeader name={name} href={href} />
       <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] ${categoryGridCols(variant)}`}>
-        {Array.from({ length: count }).map((_, i) => (
-          <PlaceholderCard key={i} variant={variant} />
-        ))}
+        {Array.from({ length: count }).map((_, i) =>
+          screens[i] ? (
+            <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={variant} sites={sites} />
+          ) : (
+            <PlaceholderCard key={i} variant={variant} />
+          ),
+        )}
       </div>
     </div>
   );
@@ -401,7 +486,17 @@ function CategorySectionSkeleton({ variant }: { variant: "ios" | "web" }) {
   );
 }
 
-function ScreenSection({ name, variant, href }: { name: string; variant: "ios" | "web"; href?: string }) {
+function ScreenSection({
+  name,
+  variant,
+  href,
+  screens = [],
+}: {
+  name: string;
+  variant: "ios" | "web";
+  href?: string;
+  screens?: RealScreen[];
+}) {
   const count = variant === "ios" ? 5 : 3;
   const cols =
     variant === "ios"
@@ -411,9 +506,13 @@ function ScreenSection({ name, variant, href }: { name: string; variant: "ios" |
     <div className="group/section flex flex-col gap-y-[20px]">
       <SectionHeader name={name} href={href} />
       <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
-        {Array.from({ length: count }).map((_, i) => (
-          <BareScreenCard key={i} variant={variant} />
-        ))}
+        {Array.from({ length: count }).map((_, i) =>
+          screens[i] ? (
+            <BareScreenCard key={`r-${screens[i].app}`} variant={variant} screen={screens[i]} />
+          ) : (
+            <BareScreenCard key={i} variant={variant} />
+          ),
+        )}
       </div>
     </div>
   );
@@ -636,8 +735,14 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant={variant} />)
-            : cats.map((c) => (
-                <CategorySection key={c} name={c} variant={variant} href={searchHref(experience, platform, "Categories", c)} />
+            : cats.map((c, i) => (
+                <CategorySection
+                  key={c}
+                  name={c}
+                  variant={variant}
+                  href={searchHref(experience, platform, "Categories", c)}
+                  screens={i === 0 ? (variant === "ios" ? iosAppScreens : webAppScreens) : undefined}
+                />
               ))}
         </div>
         <PaginationDots />
@@ -654,8 +759,14 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant={variant} />)
-            : sections.map((s) => (
-                <ScreenSection key={s} name={s} variant={variant} href={searchHref(experience, platform, filter, s)} />
+            : sections.map((s, i) => (
+                <ScreenSection
+                  key={s}
+                  name={s}
+                  variant={variant}
+                  href={searchHref(experience, platform, filter, s)}
+                  screens={i === 0 ? (variant === "ios" ? iosAppScreens : webAppScreens) : undefined}
+                />
               ))}
         </div>
         <PaginationDots />
@@ -687,8 +798,15 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <CategorySectionSkeleton key={s} variant="web" />)
-            : CATEGORIES.map((c) => (
-                <CategorySection key={c} name={c} variant="web" href={searchHref(experience, platform, "Categories", c)} />
+            : CATEGORIES.map((c, i) => (
+                <CategorySection
+                  key={c}
+                  name={c}
+                  variant="web"
+                  href={searchHref(experience, platform, "Categories", c)}
+                  screens={i === 0 ? siteScreens : undefined}
+                  sites
+                />
               ))}
         </div>
         <PaginationDots />
@@ -704,8 +822,14 @@ export default function AppCardsGrid({
         <div className="flex flex-col gap-y-[80px]">
           {loading
             ? [0, 1].map((s) => <ScreenSectionSkeleton key={s} variant="web" />)
-            : base.map((s) => (
-                <ScreenSection key={s} name={s} variant="web" href={searchHref(experience, platform, filter, s)} />
+            : base.map((s, i) => (
+                <ScreenSection
+                  key={s}
+                  name={s}
+                  variant="web"
+                  href={searchHref(experience, platform, filter, s)}
+                  screens={i === 0 ? siteScreens : undefined}
+                />
               ))}
         </div>
         <PaginationDots />
@@ -722,7 +846,10 @@ export default function AppCardsGrid({
         <div className="grid grid-cols-1 content-start gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-4 min-[720px]:gap-x-[16px] min-[720px]:gap-y-[48px]">
           {loading
             ? iosApps.map((_, i) => <SkeletonCard key={i} aspect="aspect-[3/5]" />)
-            : iosApps.map((app) => <MobileCard key={app.name} app={app} />)}
+            : [
+                ...iosAppScreens.slice(0, 4).map((s) => <MobileCard key={`r-${s.app}`} screen={s} />),
+                ...iosApps.map((app) => <MobileCard key={app.name} app={app} />),
+              ]}
         </div>
       ) : (
         <div
@@ -732,10 +859,16 @@ export default function AppCardsGrid({
           {mode === "sites"
             ? loading
               ? sites.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
-              : sites.map((site) => <SiteCard key={site.name} site={site} />)
+              : [
+                  ...siteScreens.slice(0, 3).map((s) => <SiteCard key={`r-${s.app}`} screen={s} />),
+                  ...sites.map((site) => <SiteCard key={site.name} site={site} />),
+                ]
             : loading
               ? webApps.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
-              : webApps.map((app) => <WebCard key={app.name} app={app} />)}
+              : [
+                  ...webAppScreens.slice(0, 3).map((s) => <WebCard key={`r-${s.app}`} screen={s} />),
+                  ...webApps.map((app) => <WebCard key={app.name} app={app} />),
+                ]}
         </div>
       )}
 
