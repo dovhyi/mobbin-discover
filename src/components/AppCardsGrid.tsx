@@ -851,24 +851,26 @@ export default function AppCardsGrid({
                 ...iosApps.map((app) => <MobileCard key={app.name} app={app} />),
               ]}
         </div>
+      ) : mode === "sites" ? (
+        <div className="grid grid-cols-1 content-start gap-x-[12px] gap-y-[20px] min-[720px]:grid-cols-3 min-[720px]:gap-x-[16px] min-[720px]:gap-y-[48px]">
+          {loading
+            ? sites.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
+            : [
+                ...siteScreens.slice(0, 3).map((s) => <SiteCard key={`r-${s.app}`} screen={s} />),
+                ...sites.map((site) => <SiteCard key={site.name} site={site} />),
+              ]}
+        </div>
       ) : (
         <div
           className="grid content-start gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[48px]"
           style={wideGridStyle}
         >
-          {mode === "sites"
-            ? loading
-              ? sites.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
-              : [
-                  ...siteScreens.slice(0, 3).map((s) => <SiteCard key={`r-${s.app}`} screen={s} />),
-                  ...sites.map((site) => <SiteCard key={site.name} site={site} />),
-                ]
-            : loading
-              ? webApps.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
-              : [
-                  ...webAppScreens.slice(0, 3).map((s) => <WebCard key={`r-${s.app}`} screen={s} />),
-                  ...webApps.map((app) => <WebCard key={app.name} app={app} />),
-                ]}
+          {loading
+            ? webApps.map((_, i) => <SkeletonCard key={i} aspect="aspect-square" />)
+            : [
+                ...webAppScreens.slice(0, 3).map((s) => <WebCard key={`r-${s.app}`} screen={s} />),
+                ...webApps.map((app) => <WebCard key={app.name} app={app} />),
+              ]}
         </div>
       )}
 
