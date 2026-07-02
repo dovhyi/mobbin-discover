@@ -340,11 +340,40 @@ function extractFilters(query: string, exp: "apps" | "sites") {
   const filters: Record<string, string[]> = {};
   deduped.forEach((m) => (filters[m.dim] ||= []).push(m.value));
 
-  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "screen", "screens", "page", "that", "match"]);
+  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "website", "websites", "screen", "screens", "page", "that", "match", "ios", "iphone", "android", "web"]);
   const words = remaining.split(/\s+/).filter((w) => w && !STOP.has(w));
   const leftover = words.join(" ");
 
   return { filters, leftover, valuable: leftover.length >= 3, matches: deduped, sourceCount: sources.size };
+}
+
+// Recognize a platform hint in the query ("ios app", "web app") so searching
+// applies the matching lens on the results page. Longer phrases are matched
+// first so "ios app" is consumed before a bare "ios". Returns the detected
+// platform and the query with the hint (and any dangling "app") removed.
+const PLATFORM_RULES: { kw: string; platform: "iOS" | "Web" }[] = [
+  { kw: "ios apps", platform: "iOS" },
+  { kw: "ios app", platform: "iOS" },
+  { kw: "iphone apps", platform: "iOS" },
+  { kw: "iphone app", platform: "iOS" },
+  { kw: "web apps", platform: "Web" },
+  { kw: "web app", platform: "Web" },
+  { kw: "ios", platform: "iOS" },
+  { kw: "iphone", platform: "iOS" },
+];
+
+function extractPlatform(query: string): { platform: "iOS" | "Web" | null; leftover: string } {
+  let remaining = ` ${query.toLowerCase()} `;
+  let platform: "iOS" | "Web" | null = null;
+  for (const { kw, platform: p } of PLATFORM_RULES) {
+    if (remaining.includes(` ${kw} `)) {
+      if (!platform) platform = p;
+      remaining = remaining.replace(` ${kw} `, "  ");
+    }
+  }
+  // Drop a dangling "app"/"apps" left behind by a phrase like "web app".
+  remaining = ` ${remaining.trim()} `.replace(/ apps? /g, " ");
+  return { platform, leftover: remaining.trim().replace(/\s+/g, " ") };
 }
 
 // Deterministic per-item count so the list looks populated without real data.
@@ -506,11 +535,15 @@ export default function SearchOverlay({
   const goQuery = useCallback(
     (q: string) => {
       if (!q.trim()) return;
-      const params: Record<string, string> = { exp: expSlug, q: q.trim() };
-      if (selExp !== "Sites") params.platform = selPlatform;
+      const hint = extractPlatform(q);
+      const exp = hint.platform ? "apps" : expSlug;
+      const params: Record<string, string> = { exp };
+      const text = hint.platform ? hint.leftover : q.trim();
+      if (text) params.q = text;
+      if (exp !== "sites") params.platform = hint.platform ?? selPlatform;
       navigate(params);
     },
-    [navigate, expSlug, selExp, selPlatform],
+    [navigate, expSlug, selPlatform],
   );
   const goFilter = useCallback(
     (dim: string, value: string) => {
@@ -620,7 +653,10 @@ export default function SearchOverlay({
   }, [modeMenuOpen]);
 
   const expKey = selExp === "Sites" ? "sites" : "apps";
-  const extracted = useMemo(() => extractFilters(query, expKey), [query, expKey]);
+  // A platform hint in the query ("ios app", "web app") forces the apps lens.
+  const platformHint = useMemo(() => extractPlatform(query), [query]);
+  const effExpKey = platformHint.platform ? "apps" : expKey;
+  const extracted = useMemo(() => extractFilters(query, effExpKey), [query, effExpKey]);
   const autoMode: SearchMode = query.trim().length === 0
     ? "standard"
     : Object.keys(extracted.filters).length
@@ -643,8 +679,10 @@ export default function SearchOverlay({
   const topCount = directMatch ? extracted.matches.length + 1 : 1;
 
   const runSearch = useCallback(() => {
-    const params: Record<string, string> = { exp: expSlug };
-    if (selExp !== "Sites") params.platform = selPlatform;
+    // A platform hint in the query forces the apps lens + that platform.
+    const exp = platformHint.platform ? "apps" : expSlug;
+    const params: Record<string, string> = { exp };
+    if (exp !== "sites") params.platform = platformHint.platform ?? selPlatform;
     // Start from the filters being edited so they're preserved when refining.
     const base: Filters = { ...editFilters };
     if (mode === "extract" && Object.keys(extracted.filters).length) {
@@ -652,24 +690,27 @@ export default function SearchOverlay({
         base[d] = Array.from(new Set([...(base[d] || []), ...vs]));
       });
       if (extracted.valuable && extracted.leftover) params.q = extracted.leftover;
-    } else if (query.trim()) {
-      params.q = query.trim();
+    } else {
+      const q = platformHint.platform ? platformHint.leftover : query.trim();
+      if (q) params.q = q;
     }
     const f = encodeF(base);
     if (f) params.f = f;
     navigate(params);
-  }, [mode, extracted, expSlug, selExp, selPlatform, navigate, query, editFilters]);
+  }, [mode, extracted, expSlug, selPlatform, navigate, query, editFilters, platformHint]);
 
   // Plain keyword search — ignores any extracted filter matches.
   const runPlainSearch = useCallback(() => {
-    const params: Record<string, string> = { exp: expSlug };
-    if (selExp !== "Sites") params.platform = selPlatform;
+    const exp = platformHint.platform ? "apps" : expSlug;
+    const params: Record<string, string> = { exp };
+    if (exp !== "sites") params.platform = platformHint.platform ?? selPlatform;
     const base: Filters = { ...editFilters };
-    if (query.trim()) params.q = query.trim();
+    const q = platformHint.platform ? platformHint.leftover : query.trim();
+    if (q) params.q = q;
     const f = encodeF(base);
     if (f) params.f = f;
     navigate(params);
-  }, [expSlug, selExp, selPlatform, navigate, query, editFilters]);
+  }, [expSlug, selPlatform, navigate, query, editFilters, platformHint]);
 
   // Activate whichever top row is currently highlighted (Enter / click).
   const activateSelected = useCallback(() => {
