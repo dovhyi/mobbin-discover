@@ -294,6 +294,54 @@ const SIMILAR = [
   { title: "News", desc: "Apps that provide information and developments about current events." },
 ];
 
+/* ── Category content sections (shown after a brand's own results) ── */
+
+// One content type per section — a flow, a screen and a UI element.
+const CATEGORY_CONTENT = ["Onboarding", "Dashboard", "Buttons"];
+
+// Decorative app logos flanking each section title.
+function CategoryDivider({ title, logos }: { title: string; logos: string[] }) {
+  return (
+    <div className="flex items-center gap-x-[16px]">
+      <div className="h-px flex-1 bg-[var(--border)]" />
+      <div className="flex shrink-0 items-center gap-x-[10px]">
+        <h3 className="whitespace-nowrap text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">
+          {title}
+        </h3>
+        <div className="flex items-center">
+          {logos.map((c, i) => (
+            <span
+              key={i}
+              className={`size-[26px] rounded-[28%] border-2 border-[var(--background)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)] ${
+                i > 0 ? "-ml-[8px]" : ""
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="h-px flex-1 bg-[var(--border)]" />
+    </div>
+  );
+}
+
+// A divider title + a horizontally-scrolling row of cards for that content type.
+function CategoryContentSection({ title, logos, variant }: { title: string; logos: string[]; variant: Variant }) {
+  const width = variant === "ios" ? "w-[150px]" : "w-[260px]";
+  return (
+    <div className="flex flex-col gap-y-[24px]">
+      <CategoryDivider title={title} logos={logos} />
+      <div className="scrollbar-none flex gap-[16px] overflow-x-auto">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className={`${width} shrink-0`}>
+            <BareScreenCard variant={variant} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Result grids ── */
 
 function ResultGrid({
@@ -458,13 +506,34 @@ export default function SearchResults({ experience, platform, type, filters, que
   const b2 = type === "flows" ? 3 : variant === "ios" ? (type === "screens" ? 10 : 12) : 9;
   const b3 = type === "flows" ? 2 : variant === "ios" ? (type === "screens" ? 5 : 8) : 6;
 
-  // Real Mobbin screens populate the first results section (one row).
   const sites = experience === "sites";
-  const firstRowScreens: RealScreen[] =
-    type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
 
   // Brand spotlight: a card on app results, a banner on screen/flow results.
   const brand = brandFor(query);
+
+  // The brand's own screenshots, shaped as result screens.
+  const brandScreens: RealScreen[] = brand
+    ? (variant === "ios" ? brand.screens : brand.screensWeb).map((src) => ({
+        app: brand.name,
+        description: brand.description,
+        src,
+        href: brand.href,
+        logoColor: brand.color,
+      }))
+    : [];
+
+  // On a brand query, lead the apps grid with the brand's screens; otherwise
+  // real Mobbin screens populate the first results section (one row).
+  const firstRowScreens: RealScreen[] =
+    brand && type === "apps"
+      ? brandScreens
+      : type === "flows"
+        ? []
+        : sites
+          ? siteScreens
+          : variant === "ios"
+            ? iosAppScreens
+            : webAppScreens;
 
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
@@ -480,6 +549,20 @@ export default function SearchResults({ experience, platform, type, filters, que
         sites={sites}
         brand={type === "apps" ? brand : null}
       />
+
+      {/* Same-category content types, shown after the brand's own results. */}
+      {brand && type === "apps" && (
+        <div className="flex flex-col gap-y-[40px]">
+          {CATEGORY_CONTENT.map((label) => (
+            <CategoryContentSection
+              key={label}
+              title={`${label} in ${brand.category} apps`}
+              logos={[brand.color, "#635BFF", "#0D0D0D"]}
+              variant={variant}
+            />
+          ))}
+        </div>
+      )}
 
       {reach && (
         <InjectionPanel
