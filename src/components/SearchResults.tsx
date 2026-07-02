@@ -532,18 +532,44 @@ export default function SearchResults({ experience, platform, type, filters, que
       }))
     : [];
 
-  // On a brand query, lead the apps grid with the brand's screens; otherwise
-  // real Mobbin screens populate the first results section (one row).
+  // Real Mobbin screens populate the first results section (one row).
   const firstRowScreens: RealScreen[] =
-    brand && type === "apps"
-      ? brandScreens
-      : type === "flows"
-        ? []
-        : sites
-          ? siteScreens
-          : variant === "ios"
-            ? iosAppScreens
-            : webAppScreens;
+    type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
+
+  // A brand query renders a focused screen gallery: the brand card, the brand's
+  // own screens, then a single same-category section — no reach/depth panels or
+  // generic app filler.
+  if (brand && type === "apps") {
+    const screenCols =
+      variant === "ios"
+        ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+        : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
+    const fill = variant === "ios" ? 14 : 8;
+    return (
+      <div className="flex flex-col gap-y-[48px] pb-[40px]">
+        <div className={`grid gap-x-[16px] gap-y-[28px] ${screenCols}`}>
+          {/* Landscape web screens are short, so the taller brand card spans two
+              rows to keep the grid from gapping. */}
+          <div className={variant === "web" ? "min-[720px]:row-span-2" : ""}>
+            <BrandCard brand={brand} variant={variant} />
+          </div>
+          {Array.from({ length: fill }).map((_, i) =>
+            brandScreens[i] ? (
+              <BareScreenCard key={`bs-${i}`} variant={variant} screen={brandScreens[i]} />
+            ) : (
+              <BareScreenCard key={`bs-${i}`} variant={variant} />
+            ),
+          )}
+        </div>
+
+        <CategoryContentSection
+          title={`${blockLabelFor(brand.category)} in ${brand.category} apps`}
+          logos={[brand.color, "#635BFF", "#0D0D0D"]}
+          variant={variant}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
@@ -559,15 +585,6 @@ export default function SearchResults({ experience, platform, type, filters, que
         sites={sites}
         brand={type === "apps" ? brand : null}
       />
-
-      {/* One same-category content section, shown after the brand's results. */}
-      {brand && type === "apps" && (
-        <CategoryContentSection
-          title={`${blockLabelFor(brand.category)} in ${brand.category} apps`}
-          logos={[brand.color, "#635BFF", "#0D0D0D"]}
-          variant={variant}
-        />
-      )}
 
       {reach && (
         <InjectionPanel
