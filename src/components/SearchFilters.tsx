@@ -242,8 +242,8 @@ function DimensionChip({
         onClick={() => setOpen((o) => !o)}
         className={`flex h-[40px] items-center gap-x-[8px] rounded-full text-[15px] transition-colors ${
           active
-            ? "border border-[var(--border-strong)] bg-[var(--background)] pl-[16px] pr-[8px] font-semibold text-[var(--foreground)]"
-            : "bg-[var(--fill)] px-[16px] font-medium text-[var(--muted-strong)] hover:bg-[var(--fill-hover)]"
+            ? "border-2 border-[var(--foreground)] bg-[var(--background)] pl-[16px] pr-[8px] font-semibold text-[var(--foreground)]"
+            : "border border-[var(--border)] px-[16px] font-medium text-[var(--muted-strong)] hover:border-[var(--border-strong)] hover:text-[var(--foreground)]"
         }`}
       >
         {selected.length === 0 ? (
