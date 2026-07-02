@@ -294,10 +294,17 @@ const SIMILAR = [
   { title: "News", desc: "Apps that provide information and developments about current events." },
 ];
 
-/* ── Category content sections (shown after a brand's own results) ── */
+/* ── Category content section (shown after a brand's own results) ── */
 
-// One content type per section — a flow, a screen and a UI element.
-const CATEGORY_CONTENT = ["Onboarding", "Dashboard", "Buttons"];
+// A single content type is surfaced per brand results page, picked
+// deterministically so it stays stable but differs across categories.
+const CATEGORY_CONTENT = ["Onboarding", "Checkout", "Dashboard", "Sign Up", "Empty State"];
+
+function blockLabelFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return CATEGORY_CONTENT[h % CATEGORY_CONTENT.length];
+}
 
 // Decorative app logos flanking each section title.
 function CategoryDivider({ title, logos }: { title: string; logos: string[] }) {
@@ -325,17 +332,20 @@ function CategoryDivider({ title, logos }: { title: string; logos: string[] }) {
   );
 }
 
-// A divider title + a horizontally-scrolling row of cards for that content type.
+// A divider title + a grid of screen cards, matching the standard SRP columns
+// (5 for iOS, 3 for web).
 function CategoryContentSection({ title, logos, variant }: { title: string; logos: string[]; variant: Variant }) {
-  const width = variant === "ios" ? "w-[150px]" : "w-[260px]";
+  const count = variant === "ios" ? 5 : 3;
+  const cols =
+    variant === "ios"
+      ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+      : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className="flex flex-col gap-y-[24px]">
       <CategoryDivider title={title} logos={logos} />
-      <div className="scrollbar-none flex gap-[16px] overflow-x-auto">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className={`${width} shrink-0`}>
-            <BareScreenCard variant={variant} />
-          </div>
+      <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
+        {Array.from({ length: count }).map((_, i) => (
+          <BareScreenCard key={i} variant={variant} />
         ))}
       </div>
     </div>
@@ -550,18 +560,13 @@ export default function SearchResults({ experience, platform, type, filters, que
         brand={type === "apps" ? brand : null}
       />
 
-      {/* Same-category content types, shown after the brand's own results. */}
+      {/* One same-category content section, shown after the brand's results. */}
       {brand && type === "apps" && (
-        <div className="flex flex-col gap-y-[40px]">
-          {CATEGORY_CONTENT.map((label) => (
-            <CategoryContentSection
-              key={label}
-              title={`${label} in ${brand.category} apps`}
-              logos={[brand.color, "#635BFF", "#0D0D0D"]}
-              variant={variant}
-            />
-          ))}
-        </div>
+        <CategoryContentSection
+          title={`${blockLabelFor(brand.category)} in ${brand.category} apps`}
+          logos={[brand.color, "#635BFF", "#0D0D0D"]}
+          variant={variant}
+        />
       )}
 
       {reach && (
