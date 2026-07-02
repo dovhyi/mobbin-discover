@@ -784,9 +784,10 @@ export default function SearchOverlay({
   }, [open]);
 
   const hasQuery = query.trim().length > 0;
-  // Show the carried filters + back button only while refining a non-empty
-  // query that has active filters. An empty field falls back to a fresh search.
-  const showEditing = editing && hasQuery && Object.keys(editFilters).length > 0;
+  // Show the carried filters + back button whenever the search being refined has
+  // active filters — even with an empty query. Clearing the text keeps the edit
+  // view (it doesn't revert to a fresh search); the back button starts over.
+  const showEditing = editing && Object.keys(editFilters).length > 0;
 
   // Find matching search results from our dataset
   const results = useMemo(() => {
