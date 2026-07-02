@@ -692,8 +692,11 @@ export default function SearchOverlay({
   useEffect(() => {
     if (open && !wasOpen.current) {
       wasOpen.current = true;
-      // Editing only when there was a query; filters alone start a fresh search.
-      const isEditing = allowEditing && initialQuery.trim().length > 0;
+      // Carry the page's query and filters into edit state so refining keeps
+      // them. An empty query still renders fresh (showEditing gates display).
+      const isEditing =
+        allowEditing &&
+        (initialQuery.trim().length > 0 || Object.keys(initialFilters).length > 0);
       setEditing(isEditing);
       setEditFilters(isEditing ? initialFilters : {});
     } else if (!open) {
