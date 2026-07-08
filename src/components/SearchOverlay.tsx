@@ -135,27 +135,49 @@ const sitesTabs = [
   { label: "Styles", icon: UIElementIcon },
 ];
 
-const trendingApps = [
+// Trending content differs per platform so iOS and Web feel distinct.
+const trendingAppsIOS = [
   { name: "Claude", color: "#5A47A8" },
-  { name: "Stripe", color: "#635BFF" },
-  { name: "Attio", color: "#1A1A1A" },
-  { name: "Notion", color: "#FFFFFF" },
-  { name: "Airbnb", color: "#FF5A5F" },
   { name: "Revolut", color: "#0D0D0D" },
-  { name: "Intercom", color: "#1F8DED" },
+  { name: "Midday", color: "#0F1115" },
+  { name: "Coinbase", color: "#1652F0" },
+  { name: "Airbnb", color: "#FF5A5F" },
+  { name: "Fruitful", color: "#1A1A1A" },
+  { name: "Cash App", color: "#00D54B" },
 ];
 
-const trendingScreens = [
+const trendingAppsWeb = [
+  { name: "ClickUp", color: "#7B68EE" },
+  { name: "Intercom", color: "#1F1F2E" },
+  { name: "Wise", color: "#9FE870" },
+  { name: "Framer", color: "#0D0D0D" },
+  { name: "Notion", color: "#FFFFFF" },
+  { name: "Claude", color: "#5A47A8" },
+  { name: "Raycast", color: "#FF6363" },
+];
+
+const trendingScreensIOS = [
+  "Signup", "Login", "Home", "Checkout",
+  "Dashboard", "Search", "Filter & Sort", "Error",
+];
+
+const trendingScreensWeb = [
   "Signup", "Login", "Home", "Dashboard",
   "Checkout", "Error", "Search", "Filter & Sort",
 ];
 
-const uiElements = [
+const uiElementsIOS = [
+  "Card", "Toast", "Stacked List", "Banner",
+  "Dialog", "Table", "Button", "Tab Bar",
+];
+
+const uiElementsWeb = [
   "Table", "Card", "Dialog", "Stepper", "Button",
   "Side Navigation", "Banner", "Progress Indicator",
 ];
 
-const flows = ["Onboarding", "Editing Profile", "Filtering & Sorting", "Browsing Tutorial"];
+const flowsIOS = ["Onboarding", "Editing Profile", "Filtering & Sorting", "Browsing Tutorial"];
+const flowsWeb = ["Onboarding", "Logging In", "Creating Account", "Filtering & Sorting"];
 
 const textInScreenshot = ['"Forgot Password"', '"Contact Sales"', '"Bluetooth"'];
 
@@ -345,6 +367,28 @@ function extractFilters(query: string, exp: "apps" | "sites") {
   const leftover = words.join(" ");
 
   return { filters, leftover, valuable: leftover.length >= 3, matches: deduped, sourceCount: sources.size };
+}
+
+// Detect a platform / experience hint in the query so the modal can auto-switch
+// the active lens and confirm it with a tooltip.
+interface LensHint {
+  exp: "Apps" | "Sites";
+  platform?: "iOS" | "Web";
+  label: string;
+  sig: string;
+}
+
+function detectLens(raw: string): LensHint | null {
+  const q = ` ${raw.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim()} `;
+  const has = (kw: string[]) => kw.some((k) => q.includes(` ${k} `));
+  // Order matters: "web app" / "landing page" beat the bare "app".
+  if (has(["web app", "web apps", "webapp", "webapps", "web"]))
+    return { exp: "Apps", platform: "Web", label: "Platform switched to Web", sig: "Apps:Web" };
+  if (has(["site", "sites", "website", "websites", "landing page", "landing pages"]))
+    return { exp: "Sites", label: "Switched to Sites", sig: "Sites:" };
+  if (has(["ios", "iphone", "ipad", "mobile app", "mobile apps", "app store", "android"]))
+    return { exp: "Apps", platform: "iOS", label: "Platform switched to iOS", sig: "Apps:iOS" };
+  return null;
 }
 
 // Recognize a platform hint in the query ("ios app", "web app") so searching
@@ -563,6 +607,10 @@ export default function SearchOverlay({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeTab, setActiveTab] = useState(initialTab);
+  // Confirmation tooltip shown when the query auto-switches the active lens.
+  const [platformToast, setPlatformToast] = useState<string | null>(null);
+  const lastDetectRef = useRef<string>("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Sync the active sidebar tab to the requested tab each time the modal opens.
   useEffect(() => {
@@ -579,8 +627,33 @@ export default function SearchOverlay({
     if (open) {
       setSelExp(experience);
       setSelPlatform(platform);
+      // Seed detection with the initial query so opening doesn't re-toast.
+      lastDetectRef.current = detectLens(initialQuery)?.sig ?? "";
+      setPlatformToast(null);
     }
-  }, [open, experience, platform]);
+  }, [open, experience, platform, initialQuery]);
+
+  // Auto-switch the active lens when the query names a platform / experience,
+  // and confirm it with a dismissible tooltip.
+  useEffect(() => {
+    if (!open) return;
+    const det = detectLens(query);
+    const sig = det?.sig ?? "";
+    if (sig === lastDetectRef.current) return;
+    lastDetectRef.current = sig;
+    if (!det) return;
+    const already = det.exp === selExp && (det.exp === "Sites" || det.platform === selPlatform);
+    if (already) return;
+    setSelExp(det.exp);
+    if (det.platform) setSelPlatform(det.platform);
+    setActiveTab((prev) => {
+      const tabs = det.exp === "Sites" ? sitesTabs : appsTabs;
+      return tabs.some((t) => t.label === prev) ? prev : "Trending";
+    });
+    setPlatformToast(det.label);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setPlatformToast(null), 3200);
+  }, [open, query, selExp, selPlatform]);
 
   const selectLens = useCallback((exp: "Apps" | "Sites", plat?: "iOS" | "Web") => {
     setSelExp(exp);
@@ -789,6 +862,13 @@ export default function SearchOverlay({
   // view (it doesn't revert to a fresh search); the back button starts over.
   const showEditing = editing && Object.keys(editFilters).length > 0;
 
+  // Platform-specific trending content so iOS and Web feel distinct.
+  const isIOS = selPlatform === "iOS";
+  const trendingApps = isIOS ? trendingAppsIOS : trendingAppsWeb;
+  const trendingScreens = isIOS ? trendingScreensIOS : trendingScreensWeb;
+  const uiElements = isIOS ? uiElementsIOS : uiElementsWeb;
+  const flows = isIOS ? flowsIOS : flowsWeb;
+
   // Find matching search results from our dataset
   const results = useMemo(() => {
     if (!hasQuery) return null;
@@ -982,7 +1062,11 @@ export default function SearchOverlay({
               <input
                 ref={inputRef}
                 className="grow bg-transparent text-[16px] font-[456] leading-[24px] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none"
-                placeholder="Web Apps, Screens, UI Elements, Flows or Keywords..."
+                placeholder={
+                  selExp === "Sites"
+                    ? "Sites, Sections, Styles or Keywords..."
+                    : `${selPlatform === "iOS" ? "iOS" : "Web"} Apps, Screens, UI Elements, Flows or Keywords...`
+                }
                 type="text"
                 autoFocus
                 autoComplete="off"
@@ -1024,6 +1108,22 @@ export default function SearchOverlay({
               >
                 Cancel
               </button>
+
+              {/* Platform auto-switch confirmation */}
+              {platformToast && (
+                <div className="absolute right-0 top-[calc(100%+12px)] z-40 hidden items-center gap-x-[10px] whitespace-nowrap rounded-[14px] bg-[#262626] px-[14px] py-[9px] text-[14px] font-semibold text-white shadow-[0px_12px_40px_rgba(0,0,0,0.32)] min-[720px]:flex">
+                  {platformToast}
+                  <button
+                    onClick={() => setPlatformToast(null)}
+                    aria-label="Dismiss"
+                    className="text-white/60 transition-colors hover:text-white"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
             </div>
             {showEditing && (
@@ -1365,9 +1465,9 @@ export default function SearchOverlay({
                         <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-[280px] rounded-[16px] border border-[var(--border)] bg-[var(--overlay)] p-[8px] shadow-[0px_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-[24px]">
                           <div className="px-[12px] py-[6px] text-[13px] font-semibold text-[var(--muted)]">Search mode</div>
                           {([
+                            ["extract", "Auto-filter", <ExtractIcon key="e" />],
                             ["deep", "Deep", <DeepIcon key="d" />],
                             ["standard", "Standard", <SparkIcon key="s" />],
-                            ["extract", "Filter extraction", <ExtractIcon key="e" />],
                           ] as const).map(([m, label, icon]) => (
                             <button
                               key={m}
@@ -1390,7 +1490,7 @@ export default function SearchOverlay({
                             </button>
                           ))}
                           <p className="px-[12px] pb-[6px] pt-[8px] text-[13px] leading-[18px] text-[var(--muted)]">
-                            Deep Search is automatically enabled for longer, more complex queries. May result in longer loading times.
+                            Filters can now be auto-extracted from the query and applied to search results.
                           </p>
                         </div>
                       )}
