@@ -362,7 +362,7 @@ function extractFilters(query: string, exp: "apps" | "sites") {
   const filters: Record<string, string[]> = {};
   deduped.forEach((m) => (filters[m.dim] ||= []).push(m.value));
 
-  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "screen", "screens", "page", "that", "match"]);
+  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "website", "websites", "screen", "screens", "page", "that", "match", "ios", "iphone", "android", "web"]);
   const words = remaining.split(/\s+/).filter((w) => w && !STOP.has(w));
   const leftover = words.join(" ");
 
@@ -389,6 +389,35 @@ function detectLens(raw: string): LensHint | null {
   if (has(["ios", "iphone", "ipad", "mobile app", "mobile apps", "app store", "android"]))
     return { exp: "Apps", platform: "iOS", label: "Platform switched to iOS", sig: "Apps:iOS" };
   return null;
+}
+
+// Recognize a platform hint in the query ("ios app", "web app") so searching
+// applies the matching lens on the results page. Longer phrases are matched
+// first so "ios app" is consumed before a bare "ios". Returns the detected
+// platform and the query with the hint (and any dangling "app") removed.
+const PLATFORM_RULES: { kw: string; platform: "iOS" | "Web" }[] = [
+  { kw: "ios apps", platform: "iOS" },
+  { kw: "ios app", platform: "iOS" },
+  { kw: "iphone apps", platform: "iOS" },
+  { kw: "iphone app", platform: "iOS" },
+  { kw: "web apps", platform: "Web" },
+  { kw: "web app", platform: "Web" },
+  { kw: "ios", platform: "iOS" },
+  { kw: "iphone", platform: "iOS" },
+];
+
+function extractPlatform(query: string): { platform: "iOS" | "Web" | null; leftover: string } {
+  let remaining = ` ${query.toLowerCase()} `;
+  let platform: "iOS" | "Web" | null = null;
+  for (const { kw, platform: p } of PLATFORM_RULES) {
+    if (remaining.includes(` ${kw} `)) {
+      if (!platform) platform = p;
+      remaining = remaining.replace(` ${kw} `, "  ");
+    }
+  }
+  // Drop a dangling "app"/"apps" left behind by a phrase like "web app".
+  remaining = ` ${remaining.trim()} `.replace(/ apps? /g, " ");
+  return { platform, leftover: remaining.trim().replace(/\s+/g, " ") };
 }
 
 // Deterministic per-item count so the list looks populated without real data.
@@ -550,11 +579,15 @@ export default function SearchOverlay({
   const goQuery = useCallback(
     (q: string) => {
       if (!q.trim()) return;
-      const params: Record<string, string> = { exp: expSlug, q: q.trim() };
-      if (selExp !== "Sites") params.platform = selPlatform;
+      const hint = extractPlatform(q);
+      const exp = hint.platform ? "apps" : expSlug;
+      const params: Record<string, string> = { exp };
+      const text = hint.platform ? hint.leftover : q.trim();
+      if (text) params.q = text;
+      if (exp !== "sites") params.platform = hint.platform ?? selPlatform;
       navigate(params);
     },
-    [navigate, expSlug, selExp, selPlatform],
+    [navigate, expSlug, selPlatform],
   );
   const goFilter = useCallback(
     (dim: string, value: string) => {
@@ -693,7 +726,10 @@ export default function SearchOverlay({
   }, [modeMenuOpen]);
 
   const expKey = selExp === "Sites" ? "sites" : "apps";
-  const extracted = useMemo(() => extractFilters(query, expKey), [query, expKey]);
+  // A platform hint in the query ("ios app", "web app") forces the apps lens.
+  const platformHint = useMemo(() => extractPlatform(query), [query]);
+  const effExpKey = platformHint.platform ? "apps" : expKey;
+  const extracted = useMemo(() => extractFilters(query, effExpKey), [query, effExpKey]);
   const autoMode: SearchMode = query.trim().length === 0
     ? "standard"
     : Object.keys(extracted.filters).length
@@ -716,8 +752,10 @@ export default function SearchOverlay({
   const topCount = directMatch ? extracted.matches.length + 1 : 1;
 
   const runSearch = useCallback(() => {
-    const params: Record<string, string> = { exp: expSlug };
-    if (selExp !== "Sites") params.platform = selPlatform;
+    // A platform hint in the query forces the apps lens + that platform.
+    const exp = platformHint.platform ? "apps" : expSlug;
+    const params: Record<string, string> = { exp };
+    if (exp !== "sites") params.platform = platformHint.platform ?? selPlatform;
     // Start from the filters being edited so they're preserved when refining.
     const base: Filters = { ...editFilters };
     if (mode === "extract" && Object.keys(extracted.filters).length) {
@@ -725,24 +763,27 @@ export default function SearchOverlay({
         base[d] = Array.from(new Set([...(base[d] || []), ...vs]));
       });
       if (extracted.valuable && extracted.leftover) params.q = extracted.leftover;
-    } else if (query.trim()) {
-      params.q = query.trim();
+    } else {
+      const q = platformHint.platform ? platformHint.leftover : query.trim();
+      if (q) params.q = q;
     }
     const f = encodeF(base);
     if (f) params.f = f;
     navigate(params);
-  }, [mode, extracted, expSlug, selExp, selPlatform, navigate, query, editFilters]);
+  }, [mode, extracted, expSlug, selPlatform, navigate, query, editFilters, platformHint]);
 
   // Plain keyword search — ignores any extracted filter matches.
   const runPlainSearch = useCallback(() => {
-    const params: Record<string, string> = { exp: expSlug };
-    if (selExp !== "Sites") params.platform = selPlatform;
+    const exp = platformHint.platform ? "apps" : expSlug;
+    const params: Record<string, string> = { exp };
+    if (exp !== "sites") params.platform = platformHint.platform ?? selPlatform;
     const base: Filters = { ...editFilters };
-    if (query.trim()) params.q = query.trim();
+    const q = platformHint.platform ? platformHint.leftover : query.trim();
+    if (q) params.q = q;
     const f = encodeF(base);
     if (f) params.f = f;
     navigate(params);
-  }, [expSlug, selExp, selPlatform, navigate, query, editFilters]);
+  }, [expSlug, selPlatform, navigate, query, editFilters, platformHint]);
 
   // Activate whichever top row is currently highlighted (Enter / click).
   const activateSelected = useCallback(() => {
@@ -765,8 +806,11 @@ export default function SearchOverlay({
   useEffect(() => {
     if (open && !wasOpen.current) {
       wasOpen.current = true;
-      // Editing only when there was a query; filters alone start a fresh search.
-      const isEditing = allowEditing && initialQuery.trim().length > 0;
+      // Carry the page's query and filters into edit state so refining keeps
+      // them. An empty query still renders fresh (showEditing gates display).
+      const isEditing =
+        allowEditing &&
+        (initialQuery.trim().length > 0 || Object.keys(initialFilters).length > 0);
       setEditing(isEditing);
       setEditFilters(isEditing ? initialFilters : {});
     } else if (!open) {
@@ -813,6 +857,10 @@ export default function SearchOverlay({
   }, [open]);
 
   const hasQuery = query.trim().length > 0;
+  // Show the carried filters + back button whenever the search being refined has
+  // active filters — even with an empty query. Clearing the text keeps the edit
+  // view (it doesn't revert to a fresh search); the back button starts over.
+  const showEditing = editing && Object.keys(editFilters).length > 0;
 
   // Platform-specific trending content so iOS and Web feel distinct.
   const isIOS = selPlatform === "iOS";
@@ -917,7 +965,7 @@ export default function SearchOverlay({
       if (!open) return;
 
       if (e.key === "Escape") {
-        if (editing) exitEditing();
+        if (showEditing) exitEditing();
         else onClose();
         return;
       }
@@ -965,7 +1013,7 @@ export default function SearchOverlay({
         }
       }
     },
-    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, editing, exitEditing],
+    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, showEditing, exitEditing],
   );
 
   useEffect(() => {
@@ -999,7 +1047,7 @@ export default function SearchOverlay({
           {/* ── Search input section ── */}
           <section className="flex flex-col gap-y-[14px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
             <div className="flex gap-x-[12px]">
-            {editing && (
+            {showEditing && (
               <button
                 onClick={exitEditing}
                 aria-label="Back"
@@ -1033,16 +1081,6 @@ export default function SearchOverlay({
                   }
                 }}
               />
-              {hasQuery && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="shrink-0 text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M10 19C14.9706 19 19 14.9706 19 10C19 5.02944 14.9706 1 10 1C5.02944 1 1 5.02944 1 10C1 14.9706 5.02944 19 10 19ZM6.0009 7.41414L8.58379 9.99703L6.0009 12.5799L7.41511 13.9941L9.99801 11.4112L12.5809 13.9941L13.9951 12.5799L11.4122 9.99703L13.9951 7.41414L12.5809 5.99992L9.99801 8.58282L7.41511 5.99992L6.0009 7.41414Z" fill="currentColor" />
-                  </svg>
-                </button>
-              )}
             </div>
             <div className="relative flex items-center gap-x-[16px] text-[var(--muted)]">
               <button
@@ -1088,7 +1126,7 @@ export default function SearchOverlay({
               )}
             </div>
             </div>
-            {editing && Object.keys(editFilters).length > 0 && (
+            {showEditing && (
               <SearchFilters
                 dimensionsOnly
                 dark

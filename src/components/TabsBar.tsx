@@ -108,8 +108,12 @@ export default function TabsBar({
   sort,
   onSortChange,
 }: TabsBarProps) {
+  // Sites has no Platform column, so it lays out as 3 equal columns
+  // (Experience · Filter · Sort); Apps keeps the 4-column layout.
+  const lgCols =
+    experience === "Sites" ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-4";
   return (
-    <div className="grid grid-cols-2 gap-x-[24px] gap-y-[28px] min-[1024px]:grid-cols-4 min-[1024px]:gap-x-[40px]">
+    <div className={`grid grid-cols-2 gap-x-[24px] gap-y-[28px] ${lgCols} min-[1024px]:gap-x-[40px]`}>
       <Column
         title="Experience"
         items={["Apps", "Sites"]}
@@ -132,7 +136,6 @@ export default function TabsBar({
         value={filter}
         onChange={onFilterChange}
         onHeaderClick={onFilterHeaderClick}
-        className={experience === "Sites" ? "min-[1024px]:col-span-2" : ""}
       />
 
       <Column

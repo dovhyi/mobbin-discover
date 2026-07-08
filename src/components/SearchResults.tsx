@@ -442,6 +442,64 @@ const SIMILAR = [
   { title: "News", desc: "Apps that provide information and developments about current events." },
 ];
 
+/* ── Category content section (shown after a brand's own results) ── */
+
+// A single content type is surfaced per brand results page, picked
+// deterministically so it stays stable but differs across categories.
+const CATEGORY_CONTENT = ["Onboarding", "Checkout", "Dashboard", "Sign Up", "Empty State"];
+
+function blockLabelFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return CATEGORY_CONTENT[h % CATEGORY_CONTENT.length];
+}
+
+// Decorative app logos flanking each section title.
+function CategoryDivider({ title, logos }: { title: string; logos: string[] }) {
+  return (
+    <div className="flex items-center gap-x-[16px]">
+      <div className="h-px flex-1 bg-[var(--border)]" />
+      <div className="flex shrink-0 items-center gap-x-[10px]">
+        <h3 className="whitespace-nowrap text-[16px] font-semibold leading-[24px] text-[var(--foreground)]">
+          {title}
+        </h3>
+        <div className="flex items-center">
+          {logos.map((c, i) => (
+            <span
+              key={i}
+              className={`size-[26px] rounded-[28%] border-2 border-[var(--background)] shadow-[inset_0px_0px_0px_0.5px_var(--border-strong)] ${
+                i > 0 ? "-ml-[8px]" : ""
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="h-px flex-1 bg-[var(--border)]" />
+    </div>
+  );
+}
+
+// A divider title + a grid of screen cards, matching the standard SRP columns
+// (5 for iOS, 3 for web).
+function CategoryContentSection({ title, logos, variant }: { title: string; logos: string[]; variant: Variant }) {
+  const count = variant === "ios" ? 5 : 3;
+  const cols =
+    variant === "ios"
+      ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+      : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
+  return (
+    <div className="flex flex-col gap-y-[24px]">
+      <CategoryDivider title={title} logos={logos} />
+      <div className={`grid gap-x-[16px] gap-y-[28px] ${cols}`}>
+        {Array.from({ length: count }).map((_, i) => (
+          <BareScreenCard key={i} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Result grids ── */
 
 function ResultGrid({
@@ -629,13 +687,57 @@ export default function SearchResults({ experience, platform, type, filters, que
   const b2 = type === "flows" ? 3 : variant === "ios" ? (type === "screens" ? 10 : 12) : 9;
   const b3 = type === "flows" ? 2 : variant === "ios" ? (type === "screens" ? 5 : 8) : 6;
 
-  // Real Mobbin screens populate the first results section (one row).
   const sites = experience === "sites";
-  const firstRowScreens: RealScreen[] =
-    type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
 
   // Brand spotlight: a full-width banner above the results grid (all result types).
   const brand = brandFor(query);
+
+  // The brand's own screenshots, shaped as result screens.
+  const brandScreens: RealScreen[] = brand
+    ? (variant === "ios" ? brand.screens : brand.screensWeb).map((src) => ({
+        app: brand.name,
+        description: brand.description,
+        src,
+        href: brand.href,
+        logoColor: brand.color,
+      }))
+    : [];
+
+  // Real Mobbin screens populate the first results section (one row).
+  const firstRowScreens: RealScreen[] =
+    type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
+
+  // A brand query renders a focused screen gallery: a full-width brand banner on
+  // top, the brand's own screens, then a single same-category section — no
+  // reach/depth panels or generic app filler.
+  if (brand && type === "apps") {
+    const screenCols =
+      variant === "ios"
+        ? "grid-cols-2 min-[720px]:grid-cols-3 min-[1024px]:grid-cols-5"
+        : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
+    const fill = variant === "ios" ? 15 : 9;
+    return (
+      <div className="flex flex-col gap-y-[48px] pb-[40px]">
+        <BrandBanner brand={brand} />
+
+        <div className={`grid gap-x-[16px] gap-y-[28px] ${screenCols}`}>
+          {Array.from({ length: fill }).map((_, i) =>
+            brandScreens[i] ? (
+              <BareScreenCard key={`bs-${i}`} variant={variant} screen={brandScreens[i]} />
+            ) : (
+              <BareScreenCard key={`bs-${i}`} variant={variant} />
+            ),
+          )}
+        </div>
+
+        <CategoryContentSection
+          title={`${blockLabelFor(brand.category)} in ${brand.category} apps`}
+          logos={[brand.color, "#635BFF", "#0D0D0D"]}
+          variant={variant}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
