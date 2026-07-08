@@ -67,6 +67,83 @@ function adjacentCategory(cat?: string) {
   return NEIGHBORS.find((c) => c !== cat) ?? "Productivity";
 }
 
+/* ── Granularity swap (Screen ↔ Flow) ── */
+
+// Noun (static screen/UI) → gerund (action-based flow). This is a hand-authored
+// mapping standing in for the real content-model taxonomy — some pairings (e.g.
+// Verification → Verifying) don't exist verbatim in FILTER_DATA and should be
+// reconciled against the canonical flow names before shipping.
+const GERUND: Record<string, string> = {
+  Verification: "Verifying",
+  Login: "Logging In",
+  Logout: "Logging Out",
+  Signup: "Creating Account",
+  Checkout: "Checking Out",
+  Search: "Searching",
+  Cart: "Adding to Cart",
+  Payment: "Making Payment",
+  Profile: "Editing Profile",
+  "Forgot Password": "Resetting Password",
+  "Product Detail": "Browsing Products",
+  "Order History": "Tracking Order",
+  Messages: "Messaging",
+  Chat: "Messaging",
+  "Account Setup": "Onboarding",
+  "Welcome & Get Started": "Onboarding",
+  "Guided Tour & Tutorial": "Browsing Tutorial",
+};
+// Gerund (flow) → canonical noun (screen), the reverse direction.
+const NOUN: Record<string, string> = {
+  Verifying: "Verification",
+  "Logging In": "Login",
+  "Logging Out": "Logout",
+  "Creating Account": "Signup",
+  "Checking Out": "Checkout",
+  Searching: "Search",
+  "Adding to Cart": "Cart",
+  "Making Payment": "Payment",
+  "Editing Profile": "Profile",
+  "Resetting Password": "Forgot Password",
+  "Browsing Products": "Product Detail",
+  "Tracking Order": "Order History",
+  Messaging: "Messages",
+  Onboarding: "Account Setup",
+  "Browsing Tutorial": "Guided Tour & Tutorial",
+};
+
+/* ── Category swap (adjacent category) ── */
+
+// Adjacent categories per concept. Candidates are tried in order and the first
+// one valid for the active experience wins (apps: "Crypto & Web3", sites: "Crypto").
+const CATEGORY_ADJACENCY: Record<string, string[]> = {
+  Finance: ["Crypto & Web3", "Crypto"],
+  "Crypto & Web3": ["Finance"],
+  Crypto: ["Finance"],
+  Productivity: ["Business"],
+  Business: ["Productivity"],
+  "Health & Fitness": ["Lifestyle"],
+  Health: ["Lifestyle"],
+  Lifestyle: ["Health & Fitness", "Health"],
+  Social: ["Communication", "Entertainment"],
+  Communication: ["Social"],
+  Shopping: ["Food & Drink", "Food"],
+  "Food & Drink": ["Shopping"],
+  Food: ["Shopping"],
+  Education: ["Developer Tools", "Technology"],
+  "Developer Tools": ["Education", "Technology"],
+  Technology: ["Developer Tools", "Portfolio"],
+  Portfolio: ["Technology"],
+  Entertainment: ["Music", "Social"],
+  Music: ["Entertainment"],
+  Travel: ["Real Estate", "Lifestyle"],
+};
+
+function adjacentTo(cat: string, exp: Experience): string {
+  const items = FILTER_DATA[exp]["Categories"].flatMap((g) => g.items);
+  const cand = (CATEGORY_ADJACENCY[cat] ?? []).find((c) => items.includes(c));
+  return cand ?? items.find((c) => c !== cat) ?? cat;
+}
+
 // Deterministic hash so alternating picks (e.g. iOS vs Web) stay stable per query.
 function hashStr(s: string): number {
   let h = 0;
@@ -203,8 +280,9 @@ function depthBlock(
   const style = filters["Styles"]?.[0];
 
   // Same-experience link (depth stays on the active lens).
-  const depthHref = (f: Filters) => {
+  const depthHref = (f: Filters, q?: string) => {
     const p = new URLSearchParams();
+    if (q) p.set("q", q);
     const { exp, platform } = lensParams(lens);
     p.set("exp", exp);
     if (platform) p.set("platform", platform);
@@ -238,21 +316,60 @@ function depthBlock(
     return null;
   }
 
-  // Apps — filter-dimension breadth ("Verification in Crypto", "Onboarding in Finance").
+  // Apps — category swap: same filter, adjacent category ("Screens with
+  // Verification in Crypto", i.e. Finance's neighbour).
   if (screen) {
-    const c = cat ?? adjacentCategory();
-    return { variant: "shelf", cardKind: "screen", title: `${screen} in ${c}`, action: "View screens", href: depthHref({ Screens: [screen], Categories: [c] }) };
+    const c = cat ? adjacentTo(cat, "apps") : adjacentCategory();
+    return { variant: "shelf", cardKind: "screen", title: `Screens with ${screen} in ${c}`, action: "View screens", href: depthHref({ Screens: [screen], Categories: [c] }) };
   }
   if (flow) {
-    const c = cat ?? adjacentCategory();
+    const c = cat ? adjacentTo(cat, "apps") : adjacentCategory();
     return { variant: "shelf", cardKind: "flow", title: `${flow} in ${c}`, action: "View flows", href: depthHref({ Flows: [flow], Categories: [c] }) };
   }
   if (ui)
     return { variant: "shelf", cardKind: "screen", title: `${ui} across categories`, action: "View screens", href: depthHref({ "UI Elements": [ui] }) };
-  // Category alone → similar categories; a query alone → the other app platform.
-  if (cat && !query)
+  // Category + query → the same query in the adjacent category ("Crypto that
+  // match 'KYC'"). Category alone → similar categories; query alone → the other
+  // app platform.
+  if (cat && query) {
+    const c = adjacentTo(cat, "apps");
+    return { variant: "reach", target: lens, reachType: "apps", title: `${c} that match "${query}"`, action: `View ${c}`, href: depthHref({ Categories: [c] }, query) };
+  }
+  if (cat)
     return { variant: "similar", title: `Categories similar to ${cat}`, action: "View categories", href: depthHref({ Categories: [cat] }) };
   if (query) return crossApps(lens === "ios" ? "web" : "ios");
+  return null;
+}
+
+/* ── Granularity-swap block (Screen ↔ Flow) ── */
+
+// On a Screens grid, surface the matching Flow (noun → gerund); on a Flows grid,
+// surface the matching Screens (gerund → noun). Same concept, other structural
+// level, same category.
+function swapBlock(lens: Lens, filters: Filters, type: ResultType): DepthBlock | null {
+  if (lens === "sites") return null;
+  const cat = filters["Categories"]?.[0];
+  const href = (f: Filters) => {
+    const p = new URLSearchParams();
+    const { exp, platform } = lensParams(lens);
+    p.set("exp", exp);
+    if (platform) p.set("platform", platform);
+    const fe = encodeFilters(f);
+    if (fe) p.set("f", fe);
+    return `/search?${p.toString()}`;
+  };
+  if (type === "screens") {
+    const screen = filters["Screens"]?.[0];
+    const g = screen ? GERUND[screen] : undefined;
+    if (!g) return null;
+    return { variant: "shelf", cardKind: "flow", title: cat ? `${g} in ${cat}` : g, action: "View flows", href: href(cat ? { Flows: [g], Categories: [cat] } : { Flows: [g] }) };
+  }
+  if (type === "flows") {
+    const flow = filters["Flows"]?.[0];
+    const n = flow ? NOUN[flow] : undefined;
+    if (!n) return null;
+    return { variant: "shelf", cardKind: "screen", title: cat ? `Screens with ${n} in ${cat}` : `Screens with ${n}`, action: "View screens", href: href(cat ? { Screens: [n], Categories: [cat] } : { Screens: [n] }) };
+  }
   return null;
 }
 
@@ -680,6 +797,8 @@ export default function SearchResults({ experience, platform, type, filters, que
   // Empty state injects nothing. A query alone is enough to inject.
   const injecting = query.length > 0 || hasFilters(filters);
   const reach = injecting ? reachBlock(lens, filters, query, type) : null;
+  // Granularity swap (Screen ↔ Flow) sits between reach and depth.
+  const swap = injecting ? swapBlock(lens, filters, type) : null;
   const depth = injecting ? depthBlock(lens, filters, query, reach?.target ?? "ios") : null;
 
   // Batch sizes so reach lands ~row 3 and depth ~row 6.
@@ -763,6 +882,19 @@ export default function SearchResults({ experience, platform, type, filters, que
       )}
 
       <ResultGrid type={type} variant={variant} count={b2} />
+
+      {swap && (
+        <InjectionPanel
+          icon={depthIcon(swap)}
+          title={swap.title}
+          action={swap.action}
+          href={swap.href}
+        >
+          <DepthPanelBody block={swap} variant={variant} experience={experience} platform={platform} />
+        </InjectionPanel>
+      )}
+
+      {swap && <ResultGrid type={type} variant={variant} count={b3} />}
 
       {depth && (
         <InjectionPanel
