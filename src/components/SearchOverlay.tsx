@@ -336,7 +336,7 @@ function extractFilters(query: string, exp: "apps" | "sites") {
   const filters: Record<string, string[]> = {};
   deduped.forEach((m) => (filters[m.dim] ||= []).push(m.value));
 
-  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "website", "websites", "screen", "screens", "page", "that", "match", "ios", "iphone", "android", "web"]);
+  const STOP = new Set(["with", "and", "in", "for", "the", "a", "an", "of", "app", "apps", "site", "sites", "website", "websites", "screen", "screens", "page", "that", "match", "ios", "iphone", "ipad", "mobile", "android", "web"]);
   const words = remaining.split(/\s+/).filter((w) => w && !STOP.has(w));
   const leftover = words.join(" ");
 
