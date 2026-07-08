@@ -14,9 +14,16 @@ import {
   siteScreens,
   type RealScreen,
 } from "@/data/mobbinScreens";
-import { brandFor, type Brand } from "@/data/brands";
-import { BrandBanner, BrandCard } from "@/components/BrandSpotlight";
-import type { Experience, Filters, Platform, ResultType } from "@/lib/search";
+import { brandFor } from "@/data/brands";
+import { BrandBanner } from "@/components/BrandSpotlight";
+import {
+  DIMENSIONS,
+  FILTER_DATA,
+  type Experience,
+  type Filters,
+  type Platform,
+  type ResultType,
+} from "@/lib/search";
 
 function filterHref(experience: Experience, platform: Platform, dim: string, value: string) {
   const p = new URLSearchParams();
@@ -43,10 +50,10 @@ function activeLens(experience: Experience, platform: Platform): Lens {
 const LENS_LABEL: Record<Lens, string> = { ios: "iOS Apps", web: "Web Apps", sites: "Sites" };
 
 // Label that reflects the result granularity (screens/flows), not just apps —
-// e.g. "iOS screens with Empty State in Finance" rather than "iOS Apps ...".
+// e.g. "Site Sections that match ..." rather than "Sites that match ...".
 function lensLabel(lens: Lens, type: ResultType): string {
   if (type === "screens") {
-    return lens === "ios" ? "iOS screens" : lens === "web" ? "Web screens" : "Site sections";
+    return lens === "ios" ? "iOS screens" : lens === "web" ? "Web screens" : "Site Sections";
   }
   if (type === "flows") {
     return lens === "ios" ? "iOS flows" : lens === "web" ? "Web flows" : "Site flows";
@@ -54,16 +61,17 @@ function lensLabel(lens: Lens, type: ResultType): string {
   return LENS_LABEL[lens];
 }
 const LENS_VARIANT: Record<Lens, Variant> = { ios: "ios", web: "web", sites: "web" };
-// Strongest non-active platform first (one block per type — pick the top).
-const REACH_ORDER: Record<Lens, Lens[]> = {
-  ios: ["web", "sites"],
-  web: ["ios", "sites"],
-  sites: ["ios", "web"],
-};
 
 const NEIGHBORS = ["Crypto & Web3", "Productivity", "Finance", "Social", "Health & Fitness", "Communication"];
 function adjacentCategory(cat?: string) {
   return NEIGHBORS.find((c) => c !== cat) ?? "Productivity";
+}
+
+// Deterministic hash so alternating picks (e.g. iOS vs Web) stay stable per query.
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 function encodeFilters(filters: Filters): string {
@@ -77,19 +85,32 @@ function lensParams(lens: Lens): { exp: string; platform?: string } {
   return { exp: "apps", platform: lens === "ios" ? "iOS" : "Web" };
 }
 
-function reachHref(target: Lens, filters: Filters, query: string) {
-  const p = new URLSearchParams();
-  if (query) p.set("q", query);
-  const { exp, platform } = lensParams(target);
-  p.set("exp", exp);
-  if (platform) p.set("platform", platform);
-  const f = encodeFilters(filters);
-  if (f) p.set("f", f);
-  return `/search?${p.toString()}`;
+// Which experience a lens lives in.
+function lensExperience(lens: Lens): Experience {
+  return lens === "sites" ? "sites" : "apps";
 }
 
-function hasFilters(filters: Filters) {
-  return Object.values(filters).some((v) => v.length > 0);
+// Keep only filter values that actually exist in the target experience, so
+// crossing apps↔sites never carries over a filter the target can't honour.
+function filtersForTarget(target: Lens, filters: Filters): Filters {
+  const exp = lensExperience(target);
+  const out: Filters = {};
+  DIMENSIONS[exp].forEach((dim) => {
+    const vals = (filters[dim] ?? []).filter((v) =>
+      FILTER_DATA[exp][dim].some((g) => g.items.includes(v)),
+    );
+    if (vals.length) out[dim] = vals;
+  });
+  return out;
+}
+
+// A category value only if it exists in the target experience (Finance maps,
+// "Crypto & Web3" / "Portfolio" don't cross over).
+function catForTarget(target: Lens, filters: Filters): string | undefined {
+  const cat = filters["Categories"]?.[0];
+  if (!cat) return undefined;
+  const exp = lensExperience(target);
+  return FILTER_DATA[exp]["Categories"].some((g) => g.items.includes(cat)) ? cat : undefined;
 }
 
 function subValue(filters: Filters) {
@@ -102,7 +123,40 @@ function subValue(filters: Filters) {
   );
 }
 
-/* ── Block computation ── */
+// The sub-filter, but only when it's meaningful in the target experience.
+function subForTarget(target: Lens, filters: Filters): string | undefined {
+  const sub = subValue(filters);
+  if (!sub) return undefined;
+  const exp = lensExperience(target);
+  const ok = DIMENSIONS[exp].some((dim) => FILTER_DATA[exp][dim].some((g) => g.items.includes(sub)));
+  return ok ? sub : undefined;
+}
+
+function targetHref(target: Lens, filters: Filters, query: string) {
+  const p = new URLSearchParams();
+  if (query) p.set("q", query);
+  const { exp, platform } = lensParams(target);
+  p.set("exp", exp);
+  if (platform) p.set("platform", platform);
+  const f = encodeFilters(filtersForTarget(target, filters));
+  if (f) p.set("f", f);
+  return `/search?${p.toString()}`;
+}
+
+function hasFilters(filters: Filters) {
+  return Object.values(filters).some((v) => v.length > 0);
+}
+
+/* ── Cross-content-type reach (first injection block) ── */
+
+// Apps reach into Sites / Site Sections; Sites reach into apps (platform picked
+// deterministically); Flows have no site equivalent, so they reach across the
+// other app platform instead.
+function reachTarget(lens: Lens, type: ResultType, seed: string): Lens {
+  if (lens === "sites") return hashStr(seed) % 2 === 0 ? "ios" : "web";
+  if (type === "flows") return lens === "ios" ? "web" : "ios";
+  return "sites";
+}
 
 interface ReachBlock {
   title: string;
@@ -112,24 +166,35 @@ interface ReachBlock {
 }
 
 function reachBlock(lens: Lens, filters: Filters, query: string, type: ResultType): ReachBlock | null {
-  const target = REACH_ORDER[lens][0];
-  const cat = filters["Categories"]?.[0];
-  const sub = subValue(filters);
+  const seed = query || filters["Categories"]?.[0] || subValue(filters) || "";
+  const target = reachTarget(lens, type, seed);
   const label = lensLabel(target, type);
+  const cat = catForTarget(target, filters);
+  const sub = subForTarget(target, filters);
+
   let title: string | null = null;
   if (query) title = `${label} that match "${query}"`;
   else if (cat && sub) title = `${label} with ${sub} in ${cat}`;
   else if (cat) title = `${label} in ${cat}`;
   else if (sub) title = `${label} with ${sub}`;
   if (!title) return null;
-  return { title, target, href: reachHref(target, filters, query), action: `View ${label}` };
+
+  return { title, target, href: targetHref(target, filters, query), action: `View ${label}` };
 }
 
-type DepthBlock =
-  | { variant: "similar"; title: string; action: string; filters: Filters }
-  | { variant: "shelf"; title: string; cardKind: "screen" | "flow" | "web"; action: string; filters: Filters };
+/* ── Depth / breadth (second injection block) ── */
 
-function depthBlock(filters: Filters): DepthBlock | null {
+type DepthBlock =
+  | { variant: "similar"; title: string; action: string; href: string }
+  | { variant: "shelf"; title: string; cardKind: "screen" | "flow" | "web"; action: string; href: string }
+  | { variant: "reach"; title: string; target: Lens; reachType: ResultType; action: string; href: string };
+
+function depthBlock(
+  lens: Lens,
+  filters: Filters,
+  query: string,
+  reachT: Lens,
+): DepthBlock | null {
   const cat = filters["Categories"]?.[0];
   const screen = filters["Screens"]?.[0];
   const ui = filters["UI Elements"]?.[0];
@@ -137,34 +202,61 @@ function depthBlock(filters: Filters): DepthBlock | null {
   const section = filters["Sections"]?.[0];
   const style = filters["Styles"]?.[0];
 
-  // Priority 2 — category depth (similar categories OR a trending flow, never both).
-  if (cat) {
-    if (screen || ui || flow)
-      return { variant: "shelf", title: `Onboarding in ${cat}`, cardKind: "flow", action: "View flows", filters: { Flows: ["Onboarding"], Categories: [cat] } };
-    return { variant: "similar", title: `Categories similar to "${cat}"`, action: "View categories", filters: { Categories: [cat] } };
+  // Same-experience link (depth stays on the active lens).
+  const depthHref = (f: Filters) => {
+    const p = new URLSearchParams();
+    const { exp, platform } = lensParams(lens);
+    p.set("exp", exp);
+    if (platform) p.set("platform", platform);
+    const fe = encodeFilters(f);
+    if (fe) p.set("f", fe);
+    return `/search?${p.toString()}`;
+  };
+
+  // Cross-platform app reach — "Web Apps that match ..." / "iOS Apps that match ...".
+  const crossApps = (target: Lens): DepthBlock => ({
+    variant: "reach",
+    target,
+    reachType: "apps",
+    title: `${LENS_LABEL[target]} that match "${query}"`,
+    action: `View ${LENS_LABEL[target]}`,
+    href: targetHref(target, filters, query),
+  });
+
+  if (lens === "sites") {
+    if (style && cat)
+      return { variant: "shelf", cardKind: "web", title: `${style} Sites in ${cat}`, action: "View sites", href: depthHref({ Styles: [style], Categories: [cat] }) };
+    if (section && cat)
+      return { variant: "shelf", cardKind: "web", title: `${section} Sites in ${cat}`, action: "View sites", href: depthHref({ Sections: [section], Categories: [cat] }) };
+    if (style)
+      return { variant: "shelf", cardKind: "web", title: `${style} across sites`, action: "View sites", href: depthHref({ Styles: [style] }) };
+    if (section)
+      return { variant: "shelf", cardKind: "web", title: `${section} across sites`, action: "View sites", href: depthHref({ Sections: [section] }) };
+    if (cat)
+      return { variant: "similar", title: `Categories similar to ${cat}`, action: "View categories", href: depthHref({ Categories: [cat] }) };
+    if (query) return crossApps(reachT === "ios" ? "web" : "ios");
+    return null;
   }
-  // Priority 3 — filter-dimension breadth.
-  const adj = adjacentCategory();
-  if (screen) return { variant: "shelf", title: `${screen} in ${adj}`, cardKind: "screen", action: "View screens", filters: { Screens: [screen], Categories: [adj] } };
-  if (flow) return { variant: "shelf", title: `${flow} in ${adj}`, cardKind: "flow", action: "View flows", filters: { Flows: [flow], Categories: [adj] } };
-  if (ui) return { variant: "shelf", title: `${ui} across categories`, cardKind: "screen", action: "View screens", filters: { "UI Elements": [ui] } };
-  if (section) return { variant: "shelf", title: `${section} across sites`, cardKind: "web", action: "View sites", filters: { Sections: [section] } };
-  if (style) return { variant: "shelf", title: `${style} across sites`, cardKind: "web", action: "View sites", filters: { Styles: [style] } };
+
+  // Apps — filter-dimension breadth ("Verification in Crypto", "Onboarding in Finance").
+  if (screen) {
+    const c = cat ?? adjacentCategory();
+    return { variant: "shelf", cardKind: "screen", title: `${screen} in ${c}`, action: "View screens", href: depthHref({ Screens: [screen], Categories: [c] }) };
+  }
+  if (flow) {
+    const c = cat ?? adjacentCategory();
+    return { variant: "shelf", cardKind: "flow", title: `${flow} in ${c}`, action: "View flows", href: depthHref({ Flows: [flow], Categories: [c] }) };
+  }
+  if (ui)
+    return { variant: "shelf", cardKind: "screen", title: `${ui} across categories`, action: "View screens", href: depthHref({ "UI Elements": [ui] }) };
+  // Category alone → similar categories; a query alone → the other app platform.
+  if (cat && !query)
+    return { variant: "similar", title: `Categories similar to ${cat}`, action: "View categories", href: depthHref({ Categories: [cat] }) };
+  if (query) return crossApps(lens === "ios" ? "web" : "ios");
   return null;
 }
 
-// Link to the SRP with the depth block's filters applied (same lens).
-function depthHref(lens: Lens, filters: Filters) {
-  const p = new URLSearchParams();
-  const { exp, platform } = lensParams(lens);
-  p.set("exp", exp);
-  if (platform) p.set("platform", platform);
-  const f = encodeFilters(filters);
-  if (f) p.set("f", f);
-  return `/search?${p.toString()}`;
-}
-
-/* ── UI pieces ── */
+/* ── Injection glyphs ── */
 
 function DesktopGlyph() {
   return (
@@ -183,18 +275,74 @@ function MobileGlyph() {
   );
 }
 
-function LockGlyph() {
+function GlobeGlyph() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="3" y="7" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.5" />
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M2.2 10h15.6M10 2.2c2.4 2.1 2.4 13.5 0 15.6M10 2.2c-2.4 2.1-2.4 13.5 0 15.6" stroke="currentColor" strokeWidth="1.6" />
     </svg>
   );
 }
 
-function lensGlyph(lens: Lens) {
-  return lens === "ios" ? <MobileGlyph /> : <DesktopGlyph />;
+function SectionsGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <rect x="2.5" y="3" width="15" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M2.5 8h15M8 8v9" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
 }
+
+function CategoriesGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <rect x="3" y="10" width="14" height="7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
+      <path d="M5 6.5h10M7 3h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ScreenGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <rect x="8" y="6" width="8" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 2.5H4V14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FlowGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <circle cx="4" cy="15" r="2.3" fill="currentColor" />
+      <rect x="12" y="3" width="6" height="6" rx="1.2" fill="currentColor" />
+      <path d="M4 12.5V8a3 3 0 0 1 3-3h3a3 3 0 0 0 3-3" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function SparkleGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2l1.7 5L17 8.7l-5 1.6L10 16l-2-5.7L3 8.7l5.3-1.7L10 2z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function reachIcon(target: Lens, type: ResultType) {
+  if (target === "sites") return type === "screens" ? <SectionsGlyph /> : <GlobeGlyph />;
+  return target === "ios" ? <MobileGlyph /> : <DesktopGlyph />;
+}
+
+function depthIcon(block: DepthBlock) {
+  if (block.variant === "reach") return reachIcon(block.target, block.reachType);
+  if (block.variant === "similar") return <CategoriesGlyph />;
+  if (block.cardKind === "flow") return <FlowGlyph />;
+  if (block.cardKind === "web") return <SparkleGlyph />;
+  return <ScreenGlyph />;
+}
+
+/* ── UI pieces ── */
 
 function InjectionPanel({
   icon,
@@ -302,14 +450,12 @@ function ResultGrid({
   count,
   screens = [],
   sites = false,
-  brand = null,
 }: {
   type: ResultType;
   variant: Variant;
   count: number;
   screens?: RealScreen[];
   sites?: boolean;
-  brand?: Brand | null;
 }) {
   if (type === "flows") {
     return (
@@ -343,7 +489,6 @@ function ResultGrid({
       : "grid-cols-1 min-[720px]:grid-cols-2 min-[1024px]:grid-cols-3";
   return (
     <div className={`grid gap-x-[12px] gap-y-[20px] min-[720px]:gap-x-[16px] min-[720px]:gap-y-[40px] ${cols}`}>
-      {brand && <BrandCard brand={brand} variant={variant === "web" ? "web" : "ios"} />}
       {Array.from({ length: count }).map((_, i) =>
         screens[i] ? (
           <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={variant} sites={sites} />
@@ -355,30 +500,45 @@ function ResultGrid({
   );
 }
 
-// Reach shows the other platform at the SAME granularity as the active grid.
+// Real screens that best represent a reached-into lens.
+function reachScreens(target: Lens): RealScreen[] {
+  if (target === "sites") return siteScreens;
+  return target === "ios" ? iosAppScreens : webAppScreens;
+}
+
+// Reach shows the target lens at the SAME granularity as the active grid.
 function ReachPanelBody({ target, type }: { target: Lens; type: ResultType }) {
   const v = LENS_VARIANT[target];
+  const isSites = target === "sites";
+  const screens = reachScreens(target);
   // Aspect-flip shelf: portrait for iOS, landscape for web/sites.
   if (type === "flows") {
     return <FlowCard variant={v} />;
   }
   if (type === "screens") {
+    const n = v === "ios" ? 5 : 3;
     return (
       <Shelf
         gridCols={v === "ios" ? "min-[720px]:grid-cols-5" : "min-[720px]:grid-cols-3"}
         itemWidth={v === "ios" ? "w-[40%]" : "w-[82%]"}
-        items={Array.from({ length: v === "ios" ? 5 : 3 }).map((_, i) => (
-          <BareScreenCard key={i} variant={v} />
+        items={Array.from({ length: n }).map((_, i) => (
+          <BareScreenCard key={i} variant={v} screen={screens[i]} />
         ))}
       />
     );
   }
-  const count = v === "ios" ? 4 : 3;
+  const n = v === "ios" ? 4 : 3;
   return (
     <Shelf
       gridCols={v === "ios" ? "min-[720px]:grid-cols-4" : "min-[720px]:grid-cols-3"}
       itemWidth={v === "ios" ? "w-[44%]" : "w-[82%]"}
-      items={Array.from({ length: count }).map((_, i) => <PlaceholderCard key={i} variant={v} />)}
+      items={Array.from({ length: n }).map((_, i) =>
+        screens[i] ? (
+          <RealAppCard key={`r-${screens[i].app}`} screen={screens[i]} variant={v} sites={isSites} />
+        ) : (
+          <PlaceholderCard key={i} variant={v} />
+        ),
+      )}
     />
   );
 }
@@ -410,6 +570,9 @@ function DepthPanelBody({
       />
     );
   }
+  if (block.variant === "reach") {
+    return <ReachPanelBody target={block.target} type={block.reachType} />;
+  }
   if (block.cardKind === "flow") {
     return <FlowCard variant={variant} />;
   }
@@ -418,17 +581,25 @@ function DepthPanelBody({
       <Shelf
         gridCols="min-[720px]:grid-cols-3"
         itemWidth="w-[82%]"
-        items={Array.from({ length: 3 }).map((_, i) => <PlaceholderCard key={i} variant="web" />)}
+        items={Array.from({ length: 3 }).map((_, i) =>
+          siteScreens[i] ? (
+            <RealAppCard key={`r-${siteScreens[i].app}`} screen={siteScreens[i]} variant="web" sites />
+          ) : (
+            <PlaceholderCard key={i} variant="web" />
+          ),
+        )}
       />
     );
   }
   // screens
+  const screens = variant === "ios" ? iosAppScreens : webAppScreens;
+  const n = variant === "ios" ? 5 : 3;
   return (
     <Shelf
       gridCols={variant === "ios" ? "min-[720px]:grid-cols-5" : "min-[720px]:grid-cols-3"}
       itemWidth={variant === "ios" ? "w-[40%]" : "w-[82%]"}
-      items={Array.from({ length: variant === "ios" ? 5 : 3 }).map((_, i) => (
-        <BareScreenCard key={i} variant={variant} />
+      items={Array.from({ length: n }).map((_, i) => (
+        <BareScreenCard key={i} variant={variant} screen={screens[i]} />
       ))}
     />
   );
@@ -448,10 +619,10 @@ export default function SearchResults({ experience, platform, type, filters, que
   const variant: Variant = experience === "sites" ? "web" : platform === "iOS" ? "ios" : "web";
   const lens = activeLens(experience, platform);
 
-  // Empty state injects nothing.
+  // Empty state injects nothing. A query alone is enough to inject.
   const injecting = query.length > 0 || hasFilters(filters);
   const reach = injecting ? reachBlock(lens, filters, query, type) : null;
-  const depth = injecting ? depthBlock(filters) : null;
+  const depth = injecting ? depthBlock(lens, filters, query, reach?.target ?? "ios") : null;
 
   // Batch sizes so reach lands ~row 3 and depth ~row 6.
   const b1 = type === "flows" ? 2 : variant === "ios" ? (type === "screens" ? 10 : 8) : 6;
@@ -463,14 +634,12 @@ export default function SearchResults({ experience, platform, type, filters, que
   const firstRowScreens: RealScreen[] =
     type === "flows" ? [] : sites ? siteScreens : variant === "ios" ? iosAppScreens : webAppScreens;
 
-  // Brand spotlight: a card on app results, a banner on screen/flow results.
+  // Brand spotlight: a full-width banner above the results grid (all result types).
   const brand = brandFor(query);
 
   return (
     <div className="flex flex-col gap-y-[48px] pb-[40px]">
-      {/* Brand banner sits above screen/flow results; the brand card is the
-          first cell inside the apps grid. */}
-      {brand && type !== "apps" && <BrandBanner brand={brand} />}
+      {brand && <BrandBanner brand={brand} />}
 
       <ResultGrid
         type={type}
@@ -478,12 +647,11 @@ export default function SearchResults({ experience, platform, type, filters, que
         count={b1}
         screens={firstRowScreens}
         sites={sites}
-        brand={type === "apps" ? brand : null}
       />
 
       {reach && (
         <InjectionPanel
-          icon={lensGlyph(reach.target)}
+          icon={reachIcon(reach.target, type)}
           title={reach.title}
           action={reach.action}
           href={reach.href}
@@ -496,10 +664,10 @@ export default function SearchResults({ experience, platform, type, filters, que
 
       {depth && (
         <InjectionPanel
-          icon={<LockGlyph />}
+          icon={depthIcon(depth)}
           title={depth.title}
           action={depth.action}
-          href={depthHref(lens, depth.filters)}
+          href={depth.href}
         >
           <DepthPanelBody block={depth} variant={variant} experience={experience} platform={platform} />
         </InjectionPanel>

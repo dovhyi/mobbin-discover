@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 
 // Example searches surfaced to help people discover the search experience.
 const EXAMPLE_QUERIES = [
-  "dashboard",
-  "dark mode dashboard",
+  "verification screens in finance web apps",
   "wise",
-  "linear onboarding",
-  "finance",
-  "finance empty state",
+  "wise onboarding",
+  "home screen in mobile crypto apps",
+  "account setup with color picker",
 ];
 
 // "0" = collapsed, anything else (incl. unset) = expanded.
