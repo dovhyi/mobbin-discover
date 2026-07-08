@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import searchData from "@/data/searchResults.json";
 import SearchFilters from "@/components/SearchFilters";
-import { DIMENSIONS, FILTER_DATA, type Filters } from "@/lib/search";
+import { DIMENSIONS, FILTER_DATA, flattenItems, type Filters } from "@/lib/search";
 
 /* ── Icon helpers (inline SVGs from mobbin.com) ── */
 
@@ -181,56 +181,20 @@ const flowsWeb = ["Onboarding", "Logging In", "Creating Account", "Filtering & S
 
 const textInScreenshot = ['"Forgot Password"', '"Contact Sales"', '"Bluetooth"'];
 
-const allCategories = [
-  "AI", "Business", "Collaboration", "Communication", "CRM",
-  "Developer Tools", "Education", "Entertainment", "Finance", "Food & Drink",
-  "Graphics & Design", "Health & Fitness", "Jobs & Recruitment", "Lifestyle",
-];
-
-const screensList = [
-  "Onboarding", "Sign Up", "Log In", "Home", "Dashboard", "Search",
-  "Checkout", "Settings", "Profile", "Paywall", "Verification", "Empty State",
-];
-
-const uiElementsList = [
-  "Button", "Card", "Dialog", "Table", "Stepper", "Banner",
-  "Side Navigation", "Progress Indicator", "Toggle", "Avatar", "Tooltip", "Tab Bar",
-];
-
-const flowsList = [
-  "Onboarding", "Editing Profile", "Filtering & Sorting",
-  "Browsing Tutorial", "Logging In", "Adding to Cart",
-];
-
-const siteCategoriesList = [
-  "Business", "Crypto", "Education", "Entertainment", "Finance", "Food", "Health",
-  "Lifestyle", "Portfolio", "Shopping", "Social", "Technology", "Travel", "Other",
-];
-
-const sectionsList = [
-  "404", "About", "Blog", "CTA", "Comparison", "Contact", "Downloads", "FAQ",
-  "Features", "Footer", "Hero", "How It Works", "Logos", "Navigation", "Newsletter",
-  "Pricing", "Roadmap", "Stats", "Team", "Testimonials",
-];
-
-const stylesList = [
-  "3D", "Black & White", "Bold", "Brutalist", "Colorful", "Dark", "Editorial", "Fun",
-  "Glass", "Grid", "Illustration", "Light", "Minimal", "Monochrome", "Motion",
-  "Neumorphism", "Playful", "Retro", "Serif", "Vibrant",
-];
-
-// Items for each tab — Apps tabs vs Sites tabs.
+// Filter option lists come straight from FILTER_DATA so the modal's pickers
+// stay identical to the SRP filter chips (same categories, screens, UI
+// elements, flows, site categories, sections and styles).
 const TAB_ITEMS: Record<string, string[]> = {
-  Categories: allCategories,
-  Screens: screensList,
-  "UI Elements": uiElementsList,
-  Flows: flowsList,
+  Categories: flattenItems(FILTER_DATA.apps.Categories),
+  Screens: flattenItems(FILTER_DATA.apps.Screens),
+  "UI Elements": flattenItems(FILTER_DATA.apps["UI Elements"]),
+  Flows: flattenItems(FILTER_DATA.apps.Flows),
 };
 
 const SITE_TAB_ITEMS: Record<string, string[]> = {
-  Categories: siteCategoriesList,
-  Sections: sectionsList,
-  Styles: stylesList,
+  Categories: flattenItems(FILTER_DATA.sites.Categories),
+  Sections: flattenItems(FILTER_DATA.sites.Sections),
+  Styles: flattenItems(FILTER_DATA.sites.Styles),
 };
 
 // Sites "Trending" tab content.
@@ -293,6 +257,10 @@ const SYNONYMS: Record<string, { dim: string; value: string }[]> = {
   "sign in": [{ dim: "Screens", value: "Login" }],
   "sign up": [{ dim: "Screens", value: "Signup" }],
   register: [{ dim: "Screens", value: "Signup" }],
+  // "crypto" / "web3" / "web 3" → the Crypto category (app or site variant).
+  crypto: [{ dim: "Categories", value: "Crypto & Web3" }, { dim: "Categories", value: "Crypto" }],
+  web3: [{ dim: "Categories", value: "Crypto & Web3" }, { dim: "Categories", value: "Crypto" }],
+  "web 3": [{ dim: "Categories", value: "Crypto & Web3" }, { dim: "Categories", value: "Crypto" }],
 };
 
 const DIM_LABELS: Record<string, string> = {
@@ -342,7 +310,13 @@ function extractFilters(query: string, exp: "apps" | "sites") {
 
   Object.entries(SYNONYMS).forEach(([kw, targets]) => {
     if (remaining.includes(` ${kw} `)) {
-      const valid = targets.filter((t) => DIMENSIONS[exp].includes(t.dim));
+      // Keep only targets whose dim AND value exist in this experience, so a
+      // synonym can carry both an app and a site variant (e.g. Crypto).
+      const valid = targets.filter(
+        (t) =>
+          DIMENSIONS[exp].includes(t.dim) &&
+          FILTER_DATA[exp][t.dim]?.some((g) => g.items.includes(t.value)),
+      );
       if (valid.length) {
         valid.forEach((t) => matches.push({ dim: t.dim, value: t.value }));
         sources.add(kw);
@@ -379,14 +353,15 @@ interface LensHint {
 }
 
 function detectLens(raw: string): LensHint | null {
-  const q = ` ${raw.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim()} `;
+  // "web 3" / "web3" is the Crypto & Web3 category, not the web platform.
+  const q = ` ${raw.toLowerCase().replace(/web\s*3/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim()} `;
   const has = (kw: string[]) => kw.some((k) => q.includes(` ${k} `));
   // Order matters: "web app" / "landing page" beat the bare "app".
   if (has(["web app", "web apps", "webapp", "webapps", "web"]))
     return { exp: "Apps", platform: "Web", label: "Platform switched to Web", sig: "Apps:Web" };
   if (has(["site", "sites", "website", "websites", "landing page", "landing pages"]))
     return { exp: "Sites", label: "Switched to Sites", sig: "Sites:" };
-  if (has(["ios", "iphone", "ipad", "mobile app", "mobile apps", "app store", "android"]))
+  if (has(["ios", "iphone", "ipad", "mobile", "mobile app", "mobile apps", "app store", "android"]))
     return { exp: "Apps", platform: "iOS", label: "Platform switched to iOS", sig: "Apps:iOS" };
   return null;
 }
@@ -400,14 +375,18 @@ const PLATFORM_RULES: { kw: string; platform: "iOS" | "Web" }[] = [
   { kw: "ios app", platform: "iOS" },
   { kw: "iphone apps", platform: "iOS" },
   { kw: "iphone app", platform: "iOS" },
+  { kw: "mobile apps", platform: "iOS" },
+  { kw: "mobile app", platform: "iOS" },
   { kw: "web apps", platform: "Web" },
   { kw: "web app", platform: "Web" },
   { kw: "ios", platform: "iOS" },
   { kw: "iphone", platform: "iOS" },
+  { kw: "mobile", platform: "iOS" },
 ];
 
 function extractPlatform(query: string): { platform: "iOS" | "Web" | null; leftover: string } {
-  let remaining = ` ${query.toLowerCase()} `;
+  // "web 3" / "web3" is the Crypto & Web3 category, not the web platform.
+  let remaining = ` ${query.toLowerCase().replace(/web\s*3/g, " ")} `;
   let platform: "iOS" | "Web" | null = null;
   for (const { kw, platform: p } of PLATFORM_RULES) {
     if (remaining.includes(` ${kw} `)) {
@@ -965,7 +944,7 @@ export default function SearchOverlay({
       if (!open) return;
 
       if (e.key === "Escape") {
-        if (showEditing) exitEditing();
+        if (editing) exitEditing();
         else onClose();
         return;
       }
@@ -1013,7 +992,7 @@ export default function SearchOverlay({
         }
       }
     },
-    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, showEditing, exitEditing],
+    [open, onClose, hasQuery, totalItems, selectLens, sidebarTabs, activeTab, tabItems, contentIndex, goFilter, editing, exitEditing],
   );
 
   useEffect(() => {
@@ -1047,7 +1026,7 @@ export default function SearchOverlay({
           {/* ── Search input section ── */}
           <section className="flex flex-col gap-y-[14px] px-[24px] py-[20px] max-[719px]:px-[16px] max-[719px]:pt-[max(16px,env(safe-area-inset-top))]">
             <div className="flex gap-x-[12px]">
-            {showEditing && (
+            {editing && (
               <button
                 onClick={exitEditing}
                 aria-label="Back"
