@@ -70,7 +70,11 @@ export default function Navbar({
     <header className="sticky top-0 z-11">
       <nav
         className={`bg-[var(--background)] transition-[border-color] ${
-          bordered ? "border-b border-[var(--border)]" : "border-b border-[var(--border)] min-[1160px]:border-0"
+          discoverMenuOpen
+            ? "" // merge seamlessly into the open mega menu below
+            : bordered
+              ? "border-b border-[var(--border)]"
+              : "border-b border-[var(--border)] min-[1160px]:border-0"
         }`}
       >
         <div className="relative">
@@ -97,20 +101,24 @@ export default function Navbar({
               {/* Desktop nav links */}
               <div className="hidden min-[1160px]:block">
                 <div className="flex items-center gap-x-[16px] min-[1160px]:gap-x-[24px]">
-                  <div className="flex items-center gap-x-[6px]">
+                  <div className="flex items-center">
                     <Link href="/" className={linkClass("discover")}>
                       Discover
                     </Link>
-                    {showDiscoverChevron && (
-                      <button
-                        onClick={onDiscoverToggle}
-                        aria-label="Toggle discovery menu"
-                        aria-expanded={discoverMenuOpen}
-                        className="flex items-center text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
-                      >
-                        <Chevron open={discoverMenuOpen} />
-                      </button>
-                    )}
+                    <button
+                      onClick={onDiscoverToggle}
+                      aria-label="Toggle discovery menu"
+                      aria-expanded={discoverMenuOpen}
+                      aria-hidden={!showDiscoverChevron}
+                      tabIndex={showDiscoverChevron ? 0 : -1}
+                      className={`flex items-center overflow-hidden text-[var(--muted)] transition-all duration-300 ease-out hover:text-[var(--foreground)] ${
+                        showDiscoverChevron
+                          ? "ml-[6px] w-[16px] scale-100 opacity-100 blur-0"
+                          : "pointer-events-none ml-0 w-0 scale-50 opacity-0 blur-[3px]"
+                      }`}
+                    >
+                      <Chevron open={discoverMenuOpen} />
+                    </button>
                   </div>
                   <Link href="#" className={linkClass("community")}>
                     Community
@@ -217,7 +225,7 @@ export default function Navbar({
             className="fixed inset-0 top-0 -z-10 bg-[var(--backdrop)] backdrop-blur-[2px]"
             onClick={onDiscoverToggle}
           />
-          <div className="absolute inset-x-0 top-full border-b border-[var(--border)] bg-[var(--background)] shadow-[0px_16px_48px_rgba(0,0,0,0.10)]">
+          <div className="absolute inset-x-0 top-full border-b border-[var(--border)] bg-[var(--background)]">
             <div
               className="mx-auto w-full py-[32px]"
               style={{

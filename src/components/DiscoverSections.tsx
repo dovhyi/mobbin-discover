@@ -77,7 +77,7 @@ function screenCards(screens: RealScreen[], count: number, variant: "ios" | "web
 // Curated editorial shelves — each pairs a headline with a filterable SRP link.
 export default function DiscoverSections() {
   return (
-    <div className="flex flex-col gap-y-[64px] pb-[64px]">
+    <div className="flex flex-col gap-y-[96px] pb-[64px]">
       <Section
         heading="How power tools stay calm"
         type="Developer Tools"
