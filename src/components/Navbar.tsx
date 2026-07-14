@@ -111,7 +111,7 @@ export default function Navbar({
                       aria-expanded={discoverMenuOpen}
                       aria-hidden={!showDiscoverChevron}
                       tabIndex={showDiscoverChevron ? 0 : -1}
-                      className={`flex items-center overflow-hidden text-[var(--muted)] transition-all duration-300 ease-out hover:text-[var(--foreground)] ${
+                      className={`flex items-center overflow-hidden text-[var(--muted)] transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-[var(--foreground)] ${
                         showDiscoverChevron
                           ? "ml-[6px] w-[16px] scale-100 opacity-100 blur-0"
                           : "pointer-events-none ml-0 w-0 scale-50 opacity-0 blur-[3px]"
