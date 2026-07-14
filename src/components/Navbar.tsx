@@ -3,13 +3,21 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import DiscoverGrid from "@/components/DiscoverGrid";
 
 const SEARCH_PLACEHOLDERS = ["Search iOS", "Search Web", "Search Sites"];
 
 interface NavbarProps {
   onSearchClick?: () => void;
-  activePage?: "discover" | "for-you" | "community" | "none";
+  activePage?: "discover" | "community" | "none";
   query?: string;
+  // Discovery menu (home page): the chevron appears once the in-page grid is
+  // scrolled past, and toggles a mega menu with the same grid.
+  showDiscoverChevron?: boolean;
+  discoverMenuOpen?: boolean;
+  onDiscoverToggle?: () => void;
+  // A border appears once the page is scrolled past the grid's resting spot.
+  bordered?: boolean;
 }
 
 function BellIcon() {
@@ -20,7 +28,29 @@ function BellIcon() {
   );
 }
 
-export default function Navbar({ onSearchClick, activePage = "discover", query }: NavbarProps) {
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function Navbar({
+  onSearchClick,
+  activePage = "discover",
+  query,
+  showDiscoverChevron = false,
+  discoverMenuOpen = false,
+  onDiscoverToggle,
+  bordered = false,
+}: NavbarProps) {
   const [phIndex, setPhIndex] = useState(0);
   useEffect(() => {
     if (query) return;
@@ -38,7 +68,11 @@ export default function Navbar({ onSearchClick, activePage = "discover", query }
 
   return (
     <header className="sticky top-0 z-11">
-      <nav className="border-b border-[var(--border)] bg-[var(--background)] min-[1160px]:border-0">
+      <nav
+        className={`bg-[var(--background)] transition-[border-color] ${
+          bordered ? "border-b border-[var(--border)]" : "border-b border-[var(--border)] min-[1160px]:border-0"
+        }`}
+      >
         <div className="relative">
           <div
             className="mx-auto grid w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[1fr_auto] items-center gap-x-[8px] min-[720px]:gap-x-[12px] min-[1160px]:grid-cols-[1fr_minmax(auto,520px)_1fr] min-[1160px]:grid-rows-1 min-[1160px]:py-[4px]"
@@ -63,12 +97,21 @@ export default function Navbar({ onSearchClick, activePage = "discover", query }
               {/* Desktop nav links */}
               <div className="hidden min-[1160px]:block">
                 <div className="flex items-center gap-x-[16px] min-[1160px]:gap-x-[24px]">
-                  <Link href="/" className={linkClass("discover")}>
-                    Discover
-                  </Link>
-                  <Link href="#" className={linkClass("for-you")}>
-                    For you
-                  </Link>
+                  <div className="flex items-center gap-x-[6px]">
+                    <Link href="/" className={linkClass("discover")}>
+                      Discover
+                    </Link>
+                    {showDiscoverChevron && (
+                      <button
+                        onClick={onDiscoverToggle}
+                        aria-label="Toggle discovery menu"
+                        aria-expanded={discoverMenuOpen}
+                        className="flex items-center text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+                      >
+                        <Chevron open={discoverMenuOpen} />
+                      </button>
+                    )}
+                  </div>
                   <Link href="#" className={linkClass("community")}>
                     Community
                   </Link>
@@ -152,14 +195,11 @@ export default function Navbar({ onSearchClick, activePage = "discover", query }
               </div>
             </div>
 
-            {/* Mobile: Nav tabs on second row — hidden at 840+ */}
+            {/* Mobile: Nav tabs on second row — hidden at 1160+ */}
             <div className="col-span-full row-start-2 min-[1160px]:hidden">
               <div className="flex h-[44px] items-center gap-x-[16px] py-[4px] min-[1160px]:gap-x-[24px] min-[1160px]:py-0">
                 <Link href="/" className={linkClass("discover")}>
                   Discover
-                </Link>
-                <Link href="#" className={linkClass("for-you")}>
-                  For you
                 </Link>
                 <Link href="#" className={linkClass("community")}>
                   Community
@@ -169,6 +209,28 @@ export default function Navbar({ onSearchClick, activePage = "discover", query }
           </div>
         </div>
       </nav>
+
+      {/* Mega menu — mirrors the in-page discovery grid. */}
+      {discoverMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 top-0 -z-10 bg-[var(--backdrop)] backdrop-blur-[2px]"
+            onClick={onDiscoverToggle}
+          />
+          <div className="absolute inset-x-0 top-full border-b border-[var(--border)] bg-[var(--background)] shadow-[0px_16px_48px_rgba(0,0,0,0.10)]">
+            <div
+              className="mx-auto w-full py-[32px]"
+              style={{
+                maxWidth: "calc(var(--max-content-width) + var(--container-x-padding) * 2)",
+                paddingLeft: "var(--container-x-padding)",
+                paddingRight: "var(--container-x-padding)",
+              }}
+            >
+              <DiscoverGrid onNavigate={onDiscoverToggle} />
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }
